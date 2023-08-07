@@ -1,10 +1,19 @@
 import discord
 import responses
 from discord.ext import commands
+from discord import app_commands
 import settings
 
 
 logger = settings.logging.getLogger("bot")
+
+
+class CustomView(discord.ui.View):
+
+    @discord.ui.button(label="Добавить еще раз", style=discord.ButtonStyle.primary)
+    async def one_more(self, ctx, button: discord.ui.Button):
+        # Сделать так чтобы функция play исполнялась тут еще раз (переделать run_discord_bot под класс?)
+        await ctx.response.send_message('lol')
 
 
 async def send_message(message, user_message, is_private):
@@ -26,8 +35,8 @@ def run_discord_bot():
     bot = commands.Bot(command_prefix="!", intents=intents)
 
     @bot.event
-    async def is_owner(ctx):
-        return ctx.author.id == ctx.guild.owner_id
+    async def is_owner(interaction: discord.Interaction):
+        return interaction.user.id == interaction.guild.owner_id
 
     # @bot.event
     # async def setup_hook():
@@ -69,9 +78,23 @@ def run_discord_bot():
             await ctx.send(error)
 
     @bot.hybrid_command(name="play")
-    async def play(ctx, name):
+    @app_commands.describe(link="Enter url (music.yandex/vk.com/youtube.com)")
+    async def play(ctx, link):
         """Plays music or playlist by the given link"""
-        response = "иди нахуй " + name
-        await ctx.send(response)
+
+        embed = discord.Embed(
+            colour=discord.Colour.orange(),
+            title="Название трека (украсть)",
+            description="Добавить автора трека (украсть)",
+            url=link
+        )
+
+        view = CustomView()
+
+        embed.set_author(name="Трек добавлен")
+        embed.add_field(name="Длительность", value="Добавить длительность (украсть)")
+        #embed.set_thumbnail(url="Украсть если есть, если нет вставить затычку")                   !!!!!!!!!!!!!
+
+        await ctx.send(embed=embed, view=view)
 
     bot.run(settings.DISCORD_API_SECRET, root_logger=True)
