@@ -3,9 +3,19 @@ import responses
 from discord.ext import commands
 from discord import app_commands
 import settings
+import wavelink
+from typing import Any
 
 
 logger = settings.logging.getLogger("bot")
+
+
+class Player(wavelink.Player):
+    """A Player with a DJ attribute."""
+
+    def __init__(self, dj: discord.Member, *args: Any, **kwargs: Any):
+        super().__init__(*args, **kwargs)
+        self.dj = dj
 
 
 class CustomView(discord.ui.View):
@@ -81,6 +91,28 @@ async def on_message(message):
 async def on_command_error(ctx, error):
     if isinstance(error, Exception):
         await ctx.send(error)
+
+
+@bot.event
+async def setup_hook():
+    node: wavelink.Node = wavelink.Node(uri='http://localhost:2333', password='youshallnotpass')
+    await wavelink.NodePool.connect(client=bot, nodes=[node])
+
+
+@bot.hybrid_command(name="connect")
+async def connect(ctx: commands.Context, *, search: str):
+    if not ctx.voice_client:
+        vc: wavelink.Player = await ctx.author.voice.channel.connect(cls=wavelink.Player)
+    else:
+        vc: wavelink.Player = ctx.voice_client
+
+    tracks: list[wavelink.YouTubeTrack] = await wavelink.YouTubeTrack.search(search)
+    if not tracks:
+        await ctx.send(f'Sorry I could not find any songs with search: `{search}`')
+        return
+
+    track: wavelink.YouTubeTrack = tracks[0]
+    await vc.play(track)
 
 
 @bot.hybrid_command(name="play")
