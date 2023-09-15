@@ -5,6 +5,7 @@ from discord import app_commands
 import settings
 import wavelink
 from typing import Any
+import time
 
 
 logger = settings.logging.getLogger("bot")
@@ -44,6 +45,33 @@ intents.presences = False
 intents.message_content = True
 
 bot = commands.Bot(command_prefix="!", intents=intents)
+
+
+@bot.event
+async def on_wavelink_track_end(payload: wavelink.TrackEndEventPayload) -> None:
+    player: wavelink.Player | None = payload.player
+
+    if player and player.queue:
+        await player.play(player.queue.get())
+
+
+@bot.event
+async def on_wavelink_track_start(payload: wavelink.TrackStartEventPayload) -> None:
+    # Payload original is the "original" track that was added to the queue, with all custom attributes we set.
+
+    embed = discord.Embed(
+        colour=discord.Colour.magenta(),
+        title=payload.original.title,
+        description=payload.original.author,
+        url=payload.original.uri
+    )
+
+    embed.set_author(name='Трек добавлен')
+    embed.add_field(name="Длительность", value=time.strftime("%M:%S", time.gmtime(payload.original.length/1000)))
+    embed.set_thumbnail(url=payload.original.artwork)
+
+    if payload.original:
+        await payload.original.ctx.send('Сейчас играет:', embed=embed)
 
 
 @bot.event
@@ -110,20 +138,20 @@ async def connect(ctx: commands.Context, *, search: str):
     # If the URL is a Spotify URL, make sure you have setup LavaSrc Plugin.
     tracks: wavelink.Search = await wavelink.Playable.search(search)
     if not tracks:
-        await ctx.send("No tracks found...")
+        await ctx.send("Не ищется")
         return
 
     if isinstance(tracks, wavelink.Playlist):
         tracks.track_extras(ctx=ctx)
         added: int = await vc.queue.put_wait(tracks)
-        await ctx.send(f'Added {added} tracks from the playlist {tracks.name} to the queue.')
+        await ctx.send(f'Добавлено {added} треков из плейлиста {tracks.name} в очередь.')
 
     else:
         track: wavelink.Playable = tracks[0]
         track.ctx = ctx
 
         await vc.queue.put_wait(track)
-        await ctx.send(f'Added {track} to the queue.')
+        await ctx.send(f'Добавил {track} в очередь.')
 
     if not vc.current:
         await vc.play(vc.queue.get())
