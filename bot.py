@@ -96,7 +96,7 @@ async def on_command_error(ctx, error):
 @bot.event
 async def setup_hook():
     node: wavelink.Node = wavelink.Node(uri='http://localhost:2333', password='youshallnotpass')
-    await wavelink.NodePool.connect(client=bot, nodes=[node])
+    await wavelink.Pool.connect(client=bot, nodes=[node])
 
 
 @bot.hybrid_command(name="connect")
@@ -106,13 +106,27 @@ async def connect(ctx: commands.Context, *, search: str):
     else:
         vc: wavelink.Player = ctx.voice_client
 
-    tracks: list[wavelink.YouTubeTrack] = await wavelink.YouTubeTrack.search(search)
+    # Could be a URL or Plain Search...
+    # If the URL is a Spotify URL, make sure you have setup LavaSrc Plugin.
+    tracks: wavelink.Search = await wavelink.Playable.search(search)
     if not tracks:
-        await ctx.send(f'Sorry I could not find any songs with search: `{search}`')
+        await ctx.send("No tracks found...")
         return
 
-    track: wavelink.YouTubeTrack = tracks[0]
-    await vc.play(track)
+    if isinstance(tracks, wavelink.Playlist):
+        tracks.track_extras(ctx=ctx)
+        added: int = await vc.queue.put_wait(tracks)
+        await ctx.send(f'Added {added} tracks from the playlist {tracks.name} to the queue.')
+
+    else:
+        track: wavelink.Playable = tracks[0]
+        track.ctx = ctx
+
+        await vc.queue.put_wait(track)
+        await ctx.send(f'Added {track} to the queue.')
+
+    if not vc.current:
+        await vc.play(vc.queue.get())
 
 
 @bot.hybrid_command(name="play")
