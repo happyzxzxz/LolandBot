@@ -17,16 +17,50 @@ class Player(wavelink.Player):
     def __init__(self, dj: discord.Member, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
         self.dj = dj
+        self.queue = wavelink.Queue()
 
 
-class CustomView(discord.ui.View):
+class AddMoreView(discord.ui.View):
 
     foo: bool = None
 
     @discord.ui.button(label="Добавить еще раз", style=discord.ButtonStyle.primary)
     async def one_more(self, ctx, button: discord.ui.Button):
-        await ctx.response.send_message('e')
         self.foo = True
+        self.stop()
+
+
+class NaviPanelView(discord.ui.View):
+
+    foo: bool = None
+    foo1: bool = None
+    foo2: bool = None
+    foo3: bool = None
+    foo4: bool = None
+
+    @discord.ui.button(label="Skip", style=discord.ButtonStyle.primary)
+    async def skip_button(self, ctx, button: discord.ui.Button):
+        self.foo = True
+        self.stop()
+
+    @discord.ui.button(label="Pause", style=discord.ButtonStyle.primary)
+    async def pause_button(self, ctx, button: discord.ui.Button):
+        self.foo1 = True
+        self.stop()
+
+    @discord.ui.button(label="Resume", style=discord.ButtonStyle.primary)
+    async def resume_button(self, ctx, button: discord.ui.Button):
+        self.foo2 = True
+        self.stop()
+
+    @discord.ui.button(label="Loop", style=discord.ButtonStyle.primary)
+    async def loop_button(self, ctx, button: discord.ui.Button):
+        self.foo3 = True
+        self.stop()
+
+    @discord.ui.button(label="Disconnect", style=discord.ButtonStyle.primary)
+    async def disconnect_button(self, ctx, button: discord.ui.Button):
+        self.foo4 = True
         self.stop()
 
 
@@ -70,16 +104,25 @@ async def on_wavelink_track_start(payload: wavelink.TrackStartEventPayload) -> N
     embed.add_field(name="Длительность", value=time.strftime("%M:%S", time.gmtime(payload.original.length/1000)))
     embed.set_thumbnail(url=payload.original.artwork)
 
-    if payload.original:
-        await payload.original.ctx.send('Сейчас играет:', embed=embed)
+    view = NaviPanelView(timeout=3600)
 
+    if payload.original:
+        await payload.original.ctx.send('Сейчас играет:', embed=embed, view=view)
+
+    await view.wait()
+
+    if view.foo:
+        await skip(payload.original.ctx)
+    if view.foo1:
+        await pause(payload.original.ctx)
+    if view.foo2:
+        await resume(payload.original.ctx)
+    if view.foo4:
+        await disconnect(payload.original.ctx)
 
 @bot.event
 async def is_owner(interaction: discord.Interaction):
     return interaction.user.id == interaction.guild.owner_id
-
-# @bot.event
-# async def setup_hook():
 
 
 @bot.event
@@ -127,8 +170,10 @@ async def setup_hook():
     await wavelink.Pool.connect(client=bot, nodes=[node])
 
 
-@bot.hybrid_command(name="connect")
+@bot.hybrid_command(name="play")
+@app_commands.describe(search="url (music.yandex/vk.com/youtube.com) или поисковой запрос")
 async def connect(ctx: commands.Context, *, search: str):
+    """Добавляет в очередь треки или плейлисты"""
     if not ctx.voice_client:
         vc: wavelink.Player = await ctx.author.voice.channel.connect(cls=wavelink.Player)
     else:
@@ -141,49 +186,72 @@ async def connect(ctx: commands.Context, *, search: str):
         await ctx.send("Не ищется")
         return
 
+    view = AddMoreView(timeout=3600)
+
     if isinstance(tracks, wavelink.Playlist):
         tracks.track_extras(ctx=ctx)
         added: int = await vc.queue.put_wait(tracks)
-        await ctx.send(f'Добавлено {added} треков из плейлиста {tracks.name} в очередь.')
+        await ctx.send(f'Добавлено {added} треков из плейлиста {tracks.name} в очередь.', view=view)
 
     else:
         track: wavelink.Playable = tracks[0]
         track.ctx = ctx
 
         await vc.queue.put_wait(track)
-        await ctx.send(f'Добавил {track} в очередь.')
+        await ctx.send(f'Добавил {track} в очередь.', view=view)
 
     if not vc.current:
         await vc.play(vc.queue.get())
-
-
-@bot.hybrid_command(name="play")
-@app_commands.describe(link="Enter url (music.yandex/vk.com/youtube.com)")
-async def play(ctx, link):
-    """Plays music or playlist by the given link"""
-
-    embed = discord.Embed(
-        colour=discord.Colour.orange(),
-        title="Название трека (украсть)",
-        description="Добавить автора трека (украсть)",
-        url=link
-    )
-
-    view = CustomView(timeout=3600)
-
-    embed.set_author(name="Трек добавлен")
-    embed.add_field(name="Длительность", value="Добавить длительность (украсть)")
-    #embed.set_thumbnail(url="Украсть если есть, если нет вставить затычку")                   !!!!!!!!!!!!!
-
-    await ctx.send(embed=embed, view=view)
 
     await view.wait()
 
     if view.foo is None:
         logger.error("Timeout")
     else:
-        logger.info("Adding Track one more time")
-        await play(ctx, link)
+        await connect(ctx, search=search)
+
+
+@bot.hybrid_command(name="skip")
+@app_commands.describe(count="skip {количество}")
+async def skip(ctx, count=None):
+    """Пропустить текущий трек"""
+
+    if count is None:
+        count = 1
+
+    vc: wavelink.Player = ctx.voice_client
+    new_queue = list(list(reversed(vc.queue)))[count - 1:]
+    vc.queue.clear()
+    if vc:
+        if ctx.author.voice.channel.id == ctx.bot.voice_clients[0].channel.id:
+            for track in new_queue:
+                vc.queue.put(track)
+            await vc.stop()
+        else:
+            await ctx.send('Тебя нет в воисе, шизофреник')
+    else:
+        await ctx.send('Меня нет в воисе, шизофреник')
+
+
+async def disconnect(ctx):
+    """Выйти из войс ченела"""
+    vc = ctx.voice_client
+    if vc:
+        await vc.disconnect()
+
+
+async def pause(ctx):
+    """Поставить на паузу текущий трек"""
+    vc = ctx.voice_client
+    if vc.paused and not vc.is_paused:
+        await vc.pause()
+
+
+async def resume(ctx):
+    """Поставить на паузу текущий трек"""
+    vc = ctx.voice_client
+    if vc.paused:
+        await vc.resume()
 
 
 def run_discord_bot():
