@@ -36,7 +36,7 @@ class AddMoreView(discord.ui.View):
 
             if not self.ctx.voice_client:
                 if self.ctx.author.voice is None:
-                    await self.ctx.send('Зайди в войс ченел, шизоид')
+                    await self.ctx.send('Зайди в войс ченел, шизоид', ephemeral=True)
                     return
                 vc: wavelink.Player = await self.ctx.author.voice.channel.connect(cls=wavelink.Player)
             else:
@@ -74,7 +74,7 @@ class NaviPanelView(discord.ui.View):
             await interaction.response.send_message('')
         except discord.errors.HTTPException:
             if self.ctx.author.voice is None:
-                await self.ctx.send('Зайди в войс ченел, шизоид')
+                await self.ctx.send('Зайди в войс ченел, шизоид', ephemeral=True)
                 await interaction.message.edit(content='Сейчас играет:', embed=self.embed, view=NaviPanelView(ctx=self.ctx, embed=self.embed))
                 return
             else:
@@ -89,7 +89,7 @@ class NaviPanelView(discord.ui.View):
             await interaction.response.send_message('')
         except discord.errors.HTTPException:
             if self.ctx.author.voice is None:
-                await self.ctx.send('Зайди в войс ченел, шизоид')
+                await self.ctx.send('Зайди в войс ченел, шизоид', ephemeral=True)
                 await interaction.message.edit(content='Сейчас играет:', embed=self.embed, view=NaviPanelView(ctx=self.ctx, embed=self.embed))
                 return
             else:
@@ -107,7 +107,7 @@ class NaviPanelView(discord.ui.View):
             await interaction.response.send_message('')
         except discord.errors.HTTPException:
             if self.ctx.author.voice is None:
-                await self.ctx.send('Зайди в войс ченел, шизоид')
+                await self.ctx.send('Зайди в войс ченел, шизоид', ephemeral=True)
                 await interaction.message.edit(content='Сейчас играет:', embed=self.embed, view=NaviPanelView(ctx=self.ctx, embed=self.embed))
                 return
             else:
@@ -125,7 +125,7 @@ class NaviPanelView(discord.ui.View):
             await interaction.response.send_message('')
         except discord.errors.HTTPException:
             if self.ctx.author.voice is None:
-                await self.ctx.send('Зайди в войс ченел, шизоид')
+                await self.ctx.send('Зайди в войс ченел, шизоид', ephemeral=True)
                 await interaction.message.edit(content='Сейчас играет:', embed=self.embed, view=NaviPanelView(ctx=self.ctx, embed=self.embed))
                 return
             else:
@@ -134,7 +134,7 @@ class NaviPanelView(discord.ui.View):
                 await vc.disconnect()
                 await interaction.message.edit(content='Играло до этого:', embed=self.embed, view=NaviPanelView(ctx=self.ctx, embed=self.embed))
             else:
-                await self.ctx.send('Я не в войс ченеле, шизоид')
+                await self.ctx.send('Я не в войс ченеле, шизоид', ephemeral=True)
                 await interaction.message.edit(content='Играло до этого:', embed=self.embed, view=NaviPanelView(ctx=self.ctx, embed=self.embed))
         self.stop()
 
@@ -162,6 +162,8 @@ async def on_wavelink_track_end(payload: wavelink.TrackEndEventPayload) -> None:
 
     if player and player.queue:
         await player.play(player.queue.get())
+    else:
+        await player.disconnect()
 
 
 @bot.event
@@ -243,7 +245,7 @@ async def connect(ctx: commands.Context, *, search: str):
     """Добавляет в очередь треки или плейлисты"""
     if not ctx.voice_client:
         if ctx.author.voice is None:
-            await ctx.send('Зайди в войс ченел, шизоид')
+            await ctx.send('Зайди в войс ченел, шизоид', ephemeral=True)
             return
         vc: wavelink.Player = await ctx.author.voice.channel.connect(cls=wavelink.Player)
     else:
@@ -285,9 +287,9 @@ async def skip(ctx):
         if ctx.author.voice.channel.id == ctx.bot.voice_clients[0].channel.id:
             await vc.skip()
         else:
-            await ctx.send('Тебя нет в воисе, шизофреник')
+            await ctx.send('Тебя нет в воисе, шизофреник', ephemeral=True)
     else:
-        await ctx.send('Меня нет в воисе, шизофреник')
+        await ctx.send('Меня нет в воисе, шизофреник', ephemeral=True)
 
 
 def run_discord_bot():
