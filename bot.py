@@ -22,11 +22,41 @@ class Player(wavelink.Player):
 
 class AddMoreView(discord.ui.View):
 
-    foo: bool = None
+    def __init__(self, ctx, search):
+        super().__init__()
+        self.ctx = ctx
+        self.search = search
 
     @discord.ui.button(label="Добавить еще раз", style=discord.ButtonStyle.primary)
-    async def one_more(self, ctx, button: discord.ui.Button):
-        self.foo = True
+    async def one_more(self, interaction: discord.Interaction, button: discord.ui.Button):
+        try:
+            await interaction.response.send_message('')
+        except discord.errors.HTTPException:
+
+            if not self.ctx.voice_client:
+                if self.ctx.author.voice is None:
+                    await self.ctx.send('Зайди в войс ченел, шизоид')
+                    return
+                vc: wavelink.Player = await self.ctx.author.voice.channel.connect(cls=wavelink.Player)
+            else:
+                vc: wavelink.Player = self.ctx.voice_client
+
+            tracks: wavelink.Search = await wavelink.Playable.search(self.search)
+
+            if isinstance(tracks, wavelink.Playlist):
+                tracks.track_extras(ctx=self.ctx)
+                added: int = await vc.queue.put_wait(tracks)
+
+                await interaction.message.edit(content=f'Добавлено {added} треков из плейлиста {tracks.name} в очередь.', view=AddMoreView(ctx=self.ctx, search=self.search))
+            else:
+                track: wavelink.Playable = tracks[0]
+                track.ctx = self.ctx
+                await vc.queue.put_wait(track)
+
+                await interaction.message.edit(content=f'Добавил {track} в очередь.', view=AddMoreView(ctx=self.ctx, search=self.search))
+
+            if not vc.current:
+                await vc.play(vc.queue.get())
         self.stop()
 
 
@@ -120,6 +150,7 @@ async def on_wavelink_track_start(payload: wavelink.TrackStartEventPayload) -> N
     if view.foo4:
         await disconnect(payload.original.ctx)
 
+
 @bot.event
 async def is_owner(interaction: discord.Interaction):
     return interaction.user.id == interaction.guild.owner_id
@@ -175,6 +206,9 @@ async def setup_hook():
 async def connect(ctx: commands.Context, *, search: str):
     """Добавляет в очередь треки или плейлисты"""
     if not ctx.voice_client:
+        if ctx.author.voice is None:
+            await ctx.send('Зайди в войс ченел, шизоид')
+            return
         vc: wavelink.Player = await ctx.author.voice.channel.connect(cls=wavelink.Player)
     else:
         vc: wavelink.Player = ctx.voice_client
@@ -186,7 +220,7 @@ async def connect(ctx: commands.Context, *, search: str):
         await ctx.send("Не ищется")
         return
 
-    view = AddMoreView(timeout=3600)
+    view = AddMoreView(ctx=ctx, search=search)
 
     if isinstance(tracks, wavelink.Playlist):
         tracks.track_extras(ctx=ctx)
@@ -204,11 +238,6 @@ async def connect(ctx: commands.Context, *, search: str):
         await vc.play(vc.queue.get())
 
     await view.wait()
-
-    if view.foo is None:
-        logger.error("Timeout")
-    else:
-        await connect(ctx, search=search)
 
 
 @bot.hybrid_command(name="skip")
