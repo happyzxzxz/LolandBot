@@ -6,6 +6,7 @@ import settings
 import wavelink
 from typing import Any
 import time
+import emoji
 
 
 logger = settings.logging.getLogger("bot")
@@ -62,35 +63,79 @@ class AddMoreView(discord.ui.View):
 
 class NaviPanelView(discord.ui.View):
 
-    foo: bool = None
-    foo1: bool = None
-    foo2: bool = None
-    foo3: bool = None
-    foo4: bool = None
+    def __init__(self, ctx, embed):
+        super().__init__()
+        self.ctx = ctx
+        self.embed = embed
 
-    @discord.ui.button(label="Skip", style=discord.ButtonStyle.primary)
-    async def skip_button(self, ctx, button: discord.ui.Button):
-        self.foo = True
+    @discord.ui.button(emoji=emoji.emojize(':next_track_button:'), style=discord.ButtonStyle.primary)
+    async def skip_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        try:
+            await interaction.response.send_message('')
+        except discord.errors.HTTPException:
+            if self.ctx.author.voice is None:
+                await self.ctx.send('Зайди в войс ченел, шизоид')
+                await interaction.message.edit(content='Сейчас играет:', embed=self.embed, view=NaviPanelView(ctx=self.ctx, embed=self.embed))
+                return
+            else:
+                vc: wavelink.Player = self.ctx.voice_client
+            await vc.skip()
+            await interaction.message.edit(content='Сейчас играет:', embed=self.embed, view=NaviPanelView(ctx=self.ctx, embed=self.embed))
         self.stop()
 
-    @discord.ui.button(label="Pause", style=discord.ButtonStyle.primary)
-    async def pause_button(self, ctx, button: discord.ui.Button):
-        self.foo1 = True
+    @discord.ui.button(emoji=emoji.emojize(':pause_button:'), style=discord.ButtonStyle.primary)
+    async def pause_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        try:
+            await interaction.response.send_message('')
+        except discord.errors.HTTPException:
+            if self.ctx.author.voice is None:
+                await self.ctx.send('Зайди в войс ченел, шизоид')
+                await interaction.message.edit(content='Сейчас играет:', embed=self.embed, view=NaviPanelView(ctx=self.ctx, embed=self.embed))
+                return
+            else:
+                vc: wavelink.Player = self.ctx.voice_client
+            if not vc.paused and vc.current:
+                await vc.pause(True)
+                await interaction.message.edit(content='Сейчас играет:', embed=self.embed, view=NaviPanelView(ctx=self.ctx, embed=self.embed))
+            else:
+                await interaction.message.edit(content='Сейчас играет:', embed=self.embed, view=NaviPanelView(ctx=self.ctx, embed=self.embed))
         self.stop()
 
-    @discord.ui.button(label="Resume", style=discord.ButtonStyle.primary)
-    async def resume_button(self, ctx, button: discord.ui.Button):
-        self.foo2 = True
+    @discord.ui.button(emoji=emoji.emojize(':play_button:'), style=discord.ButtonStyle.primary)
+    async def resume_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        try:
+            await interaction.response.send_message('')
+        except discord.errors.HTTPException:
+            if self.ctx.author.voice is None:
+                await self.ctx.send('Зайди в войс ченел, шизоид')
+                await interaction.message.edit(content='Сейчас играет:', embed=self.embed, view=NaviPanelView(ctx=self.ctx, embed=self.embed))
+                return
+            else:
+                vc: wavelink.Player = self.ctx.voice_client
+            if vc.paused and vc.current:
+                await vc.pause(False)
+                await interaction.message.edit(content='Сейчас играет:', embed=self.embed, view=NaviPanelView(ctx=self.ctx, embed=self.embed))
+            else:
+                await interaction.message.edit(content='Сейчас играет:', embed=self.embed, view=NaviPanelView(ctx=self.ctx, embed=self.embed))
         self.stop()
 
-    @discord.ui.button(label="Loop", style=discord.ButtonStyle.primary)
-    async def loop_button(self, ctx, button: discord.ui.Button):
-        self.foo3 = True
-        self.stop()
-
-    @discord.ui.button(label="Disconnect", style=discord.ButtonStyle.primary)
-    async def disconnect_button(self, ctx, button: discord.ui.Button):
-        self.foo4 = True
+    @discord.ui.button(emoji=emoji.emojize(':cross_mark:'), style=discord.ButtonStyle.primary)
+    async def disconnect_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        try:
+            await interaction.response.send_message('')
+        except discord.errors.HTTPException:
+            if self.ctx.author.voice is None:
+                await self.ctx.send('Зайди в войс ченел, шизоид')
+                await interaction.message.edit(content='Сейчас играет:', embed=self.embed, view=NaviPanelView(ctx=self.ctx, embed=self.embed))
+                return
+            else:
+                vc: wavelink.Player = self.ctx.voice_client
+            if vc:
+                await vc.disconnect()
+                await interaction.message.edit(content='Играло до этого:', embed=self.embed, view=NaviPanelView(ctx=self.ctx, embed=self.embed))
+            else:
+                await self.ctx.send('Я не в войс ченеле, шизоид')
+                await interaction.message.edit(content='Играло до этого:', embed=self.embed, view=NaviPanelView(ctx=self.ctx, embed=self.embed))
         self.stop()
 
 
@@ -134,21 +179,12 @@ async def on_wavelink_track_start(payload: wavelink.TrackStartEventPayload) -> N
     embed.add_field(name="Длительность", value=time.strftime("%M:%S", time.gmtime(payload.original.length/1000)))
     embed.set_thumbnail(url=payload.original.artwork)
 
-    view = NaviPanelView(timeout=3600)
+    view = NaviPanelView(ctx=payload.original.ctx, embed=embed)
 
     if payload.original:
         await payload.original.ctx.send('Сейчас играет:', embed=embed, view=view)
 
     await view.wait()
-
-    if view.foo:
-        await skip(payload.original.ctx)
-    if view.foo1:
-        await pause(payload.original.ctx)
-    if view.foo2:
-        await resume(payload.original.ctx)
-    if view.foo4:
-        await disconnect(payload.original.ctx)
 
 
 @bot.event
@@ -241,46 +277,17 @@ async def connect(ctx: commands.Context, *, search: str):
 
 
 @bot.hybrid_command(name="skip")
-@app_commands.describe(count="skip {количество}")
-async def skip(ctx, count=None):
-    """Пропустить текущий трек"""
-
-    if count is None:
-        count = 1
+async def skip(ctx):
+    """Пропустить текущий трек (Количество не работает и не будет пока дауны не доделают свою ебаную бету)"""
 
     vc: wavelink.Player = ctx.voice_client
-    new_queue = list(list(reversed(vc.queue)))[count - 1:]
-    vc.queue.clear()
     if vc:
         if ctx.author.voice.channel.id == ctx.bot.voice_clients[0].channel.id:
-            for track in new_queue:
-                vc.queue.put(track)
-            await vc.stop()
+            await vc.skip()
         else:
             await ctx.send('Тебя нет в воисе, шизофреник')
     else:
         await ctx.send('Меня нет в воисе, шизофреник')
-
-
-async def disconnect(ctx):
-    """Выйти из войс ченела"""
-    vc = ctx.voice_client
-    if vc:
-        await vc.disconnect()
-
-
-async def pause(ctx):
-    """Поставить на паузу текущий трек"""
-    vc = ctx.voice_client
-    if vc.paused and not vc.is_paused:
-        await vc.pause()
-
-
-async def resume(ctx):
-    """Поставить на паузу текущий трек"""
-    vc = ctx.voice_client
-    if vc.paused:
-        await vc.resume()
 
 
 def run_discord_bot():
