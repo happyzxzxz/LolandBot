@@ -1,3 +1,5 @@
+import os
+
 import discord
 import responses
 from discord.ext import commands
@@ -8,9 +10,11 @@ from typing import Any
 import time
 import emoji
 import openai
+import json
 
 
 logger = settings.logging.getLogger("bot")
+openai.api_key = settings.OPENAI_API_SECRET
 
 
 class Player(wavelink.Player):
@@ -294,19 +298,49 @@ async def skip(ctx):
 
 
 @bot.hybrid_command(name="chat")
-@app_commands.describe(search="Отправить запрос в ChatGPT 3.5")
-async def chat(ctx):
-    """Спросить что-нибудь у Лоланда (он всезнающий)""""
-    message = ctx.message
-    messages.append(
-        {'role': "user", 'content': message},
-    )
+@app_commands.describe(prompt="Запрос Лоланду (если что-то серьезное, то лучше делать точнее и с подробностями)")
+async def chat(ctx: commands.Context, prompt):
+    """Спросить что-нибудь у Лоланда (он всезнающий)"""
+
+    await ctx.defer()
+
+    result = str(prompt)
+    author_log = 'chatgptlog' + str(ctx.author.id) + '.json'
+
+    if author_log not in os.listdir('chatgptlogs'):
+        with open('chatgptlogs/' + author_log, 'w', encoding='UTF-8') as file:
+            json.dump([], file)
+
+    with open('chatgptlogs/' + author_log, 'r', encoding='UTF-8') as messages_file:
+        messages = json.load(messages_file)
+
+    messages.append({'role': "user", 'content': result})
+
+    if len(messages) > 5:
+        messages = messages[-5:]
+
     chatgpt = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo", messages=messages
+        model="gpt-3.5-turbo",
+        messages=[{"role": "system", "content": result}] + messages
     )
+
     reply = chatgpt.choices[0].message.content
     messages.append({"role": "assistant", "content": reply})
-    await ctx.send(reply)
+
+    with open('chatgptlogs/' + author_log, 'w', encoding='UTF-8') as messages_file:
+        json.dump(messages, messages_file)
+
+    await ctx.reply(embed=discord.Embed(title=f'{result}', description=reply))
+
+
+@bot.hybrid_command(name="clear_history")
+async def clear_history(ctx: commands.Context):
+    """Удаляет всю вашу историю сообщений с Лоландом (например, если токенов слишком много)"""
+    if ('chatgptlog' + str(ctx.author.id) + '.json') in os.listdir('chatgptlogs'):
+        os.remove('chatgptlogs/chatgptlog' + str(ctx.author.id) + '.json')
+        await ctx.reply('ХАРОШ: История успешно удалена')
+    else:
+        await ctx.reply('ТЫ ДАУН: Истории сообщений несуществует')
 
 
 def run_discord_bot():
