@@ -7,6 +7,7 @@ import wavelink
 from typing import Any
 import time
 import emoji
+import openai
 
 
 logger = settings.logging.getLogger("bot")
@@ -240,7 +241,7 @@ async def setup_hook():
 
 
 @bot.hybrid_command(name="play")
-@app_commands.describe(search="url (music.yandex/vk.com/youtube.com) или поисковой запрос")
+@app_commands.describe(search="url (yandex/soudcloud/spotify/youtube) или поисковой запрос")
 async def connect(ctx: commands.Context, *, search: str):
     """Добавляет в очередь треки или плейлисты"""
     if not ctx.voice_client:
@@ -290,6 +291,22 @@ async def skip(ctx):
             await ctx.send('Тебя нет в воисе, шизофреник', ephemeral=True)
     else:
         await ctx.send('Меня нет в воисе, шизофреник', ephemeral=True)
+
+
+@bot.hybrid_command(name="chat")
+@app_commands.describe(search="Отправить запрос в ChatGPT 3.5")
+async def chat(ctx):
+    """Спросить что-нибудь у Лоланда (он всезнающий)""""
+    message = ctx.message
+    messages.append(
+        {'role': "user", 'content': message},
+    )
+    chatgpt = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo", messages=messages
+    )
+    reply = chatgpt.choices[0].message.content
+    messages.append({"role": "assistant", "content": reply})
+    await ctx.send(reply)
 
 
 def run_discord_bot():
