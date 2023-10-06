@@ -7,6 +7,7 @@ import logging
 load_dotenv()
 
 DISCORD_API_SECRET = os.getenv("DISCORD_API_TOKEN")
+OPENAI_API_SECRET = os.getenv("OPENAI_API_TOKEN")
 
 BASE_DIR = pathlib.Path(__file__).parent
 
