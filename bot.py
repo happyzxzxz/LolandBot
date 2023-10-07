@@ -11,6 +11,7 @@ import time
 import emoji
 import openai
 import json
+import aiohttp
 
 
 logger = settings.logging.getLogger("bot")
@@ -300,8 +301,6 @@ async def skip(ctx):
 @bot.hybrid_command(name="chat")
 @app_commands.describe(prompt="Запрос Лоланду (если что-то серьезное, то лучше делать точнее и с подробностями)")
 async def chat(ctx: commands.Context, prompt):
-    """Спросить что-нибудь у Лоланда (он всезнающий)"""
-
     await ctx.defer()
 
     result = str(prompt)
@@ -319,18 +318,37 @@ async def chat(ctx: commands.Context, prompt):
     if len(messages) > 5:
         messages = messages[-5:]
 
-    chatgpt = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",
-        messages=[{"role": "system", "content": result}] + messages
-    )
+    async with aiohttp.ClientSession() as session:
+        chatgpt = await get_chat_response(session, result, messages)
 
-    reply = chatgpt.choices[0].message.content
+    logger.info(f'{chatgpt["choices"][0]["message"]}, Author: {ctx.author}')
+
+    reply = chatgpt["choices"][0]["message"]["content"]
     messages.append({"role": "assistant", "content": reply})
 
     with open('chatgptlogs/' + author_log, 'w', encoding='UTF-8') as messages_file:
         json.dump(messages, messages_file)
 
     await ctx.reply(embed=discord.Embed(title=f'{result}', description=reply))
+
+
+async def get_chat_response(session, result, messages):
+
+    headers = {
+        "Authorization": f"Bearer {openai.api_key}",
+        "Content-Type": "application/json"
+    }
+
+    async with session.post(
+        "https://api.openai.com/v1/chat/completions",
+        headers=headers,
+        json={
+            "model": "gpt-3.5-turbo",
+            "messages": [{"role": "system", "content": result}] + messages
+        },
+    ) as response:
+        response_data = await response.json()
+        return response_data
 
 
 @bot.hybrid_command(name="clear_history")
