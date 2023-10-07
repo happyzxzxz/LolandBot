@@ -298,9 +298,45 @@ async def skip(ctx):
         await ctx.send('Меня нет в воисе, шизофреник', ephemeral=True)
 
 
+@bot.hybrid_command(name="chate")
+@app_commands.describe(prompt="Запрос Лоланду (если что-то серьезное, то лучше делать точнее и с подробностями)")
+async def chat(ctx: commands.Context, prompt):
+    """Спросить что-нибудь у Лоланда (запрос и результат виден только вам)"""
+    await ctx.defer(ephemeral=True)
+
+    result = str(prompt)
+    author_log = 'chatgptlog' + str(ctx.author.id) + '.json'
+
+    if author_log not in os.listdir('chatgptlogs'):
+        with open('chatgptlogs/' + author_log, 'w', encoding='UTF-8') as file:
+            json.dump([], file)
+
+    with open('chatgptlogs/' + author_log, 'r', encoding='UTF-8') as messages_file:
+        messages = json.load(messages_file)
+
+    messages.append({'role': "user", 'content': result})
+
+    if len(messages) > 5:
+        messages = messages[-5:]
+
+    async with aiohttp.ClientSession() as session:
+        chatgpt = await get_chat_response(session, result, messages)
+
+    logger.info(f'{chatgpt["choices"][0]["message"]}, Author: {ctx.author}')
+
+    reply = chatgpt["choices"][0]["message"]["content"]
+    messages.append({"role": "assistant", "content": reply})
+
+    with open('chatgptlogs/' + author_log, 'w', encoding='UTF-8') as messages_file:
+        json.dump(messages, messages_file)
+
+    await ctx.reply(embed=discord.Embed(title=f'{result}', description=reply), ephemeral=True)
+
+
 @bot.hybrid_command(name="chat")
 @app_commands.describe(prompt="Запрос Лоланду (если что-то серьезное, то лучше делать точнее и с подробностями)")
 async def chat(ctx: commands.Context, prompt):
+    """Спросить что-нибудь у Лоланда (запрос и результат виден только вам)"""
     await ctx.defer()
 
     result = str(prompt)
