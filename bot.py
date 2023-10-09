@@ -330,7 +330,7 @@ async def chat(ctx: commands.Context, prompt):
     with open('chatgptlogs/' + author_log, 'w', encoding='UTF-8') as messages_file:
         json.dump(messages, messages_file)
 
-    await ctx.reply(embed=discord.Embed(title=f'{result}', description=reply), ephemeral=True)
+    await ctx.reply(embed=discord.Embed(title=f'{result[:255]}', description=reply), ephemeral=True)
 
 
 @bot.hybrid_command(name="chat")
@@ -365,7 +365,7 @@ async def chat(ctx: commands.Context, prompt):
     with open('chatgptlogs/' + author_log, 'w', encoding='UTF-8') as messages_file:
         json.dump(messages, messages_file)
 
-    await ctx.reply(embed=discord.Embed(title=f'{result}', description=reply))
+    await ctx.reply(embed=discord.Embed(title=f'{result[:255]}', description=reply))
 
 
 async def get_chat_response(session, result, messages):
