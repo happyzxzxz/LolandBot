@@ -337,7 +337,7 @@ async def chat(ctx: commands.Context, prompt):
 @bot.hybrid_command(name="chat")
 @app_commands.describe(prompt="Запрос Лоланду (если что-то серьезное, то лучше делать точнее и с подробностями)")
 async def chat(ctx: commands.Context, prompt):
-    """Спросить что-нибудь у Лоланда (запрос и результат виден только вам)"""
+    """Спросить что-нибудь у Лоланда (запрос и результат виден всем)"""
     await ctx.defer()
 
     result = str(prompt)
@@ -385,6 +385,8 @@ async def image(ctx: commands.Context, prompt, size="256x256"):
         chatgpt = await get_image_response(session, result, size)
 
     image_url = chatgpt['data'][0]['url']
+
+    logger.info(f'{image_url}, Author: {ctx.author}')
 
     embed = discord.Embed()
     embed.set_image(url=image_url)
