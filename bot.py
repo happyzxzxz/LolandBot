@@ -368,6 +368,28 @@ async def chat(ctx: commands.Context, prompt):
     await ctx.reply(embed=discord.Embed(title=f'{result[:255]}', description=reply))
 
 
+@bot.hybrid_command(name="image")
+@app_commands.describe(prompt="Промпт картинки (можно на русском, но лучше на ангельском)", size="Размер картинки (допустимо 256x526, 512x512, 1024x1024, по умолчанию 256x256)")
+async def image(ctx: commands.Context, prompt, size="256x256"):
+    """Нарисовать картинку с помощью Лоланда"""
+    await ctx.defer()
+
+    result = str(prompt)
+
+    if size not in ["256x526", "512x512", "1024x1024"]:
+        size = "256x256"
+
+    async with aiohttp.ClientSession() as session:
+        chatgpt = await get_image_response(session, result, size)
+
+    image_url = chatgpt['data'][0]['url']
+
+    embed = discord.Embed()
+    embed.set_image(url=image_url)
+
+    await ctx.reply(result, embed=embed)
+
+
 async def get_chat_response(session, result, messages):
 
     headers = {
@@ -381,6 +403,26 @@ async def get_chat_response(session, result, messages):
         json={
             "model": "gpt-3.5-turbo",
             "messages": [{"role": "system", "content": result}] + messages
+        },
+    ) as response:
+        response_data = await response.json()
+        return response_data
+
+
+async def get_image_response(session, result, size):
+
+    headers = {
+        "Authorization": f"Bearer {openai.api_key}",
+        "Content-Type": "application/json"
+    }
+
+    async with session.post(
+        "https://api.openai.com/v1/images/generations",
+        headers=headers,
+        json={
+            "prompt": result,
+            "n": 1,
+            "size": size
         },
     ) as response:
         response_data = await response.json()
