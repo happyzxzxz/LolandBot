@@ -374,25 +374,30 @@ async def chat(ctx: commands.Context, prompt):
 @app_commands.describe(prompt="Промпт картинки (можно на русском, но лучше на ангельском)", size="Размер картинки (допустимо 256x526, 512x512, 1024x1024, по умолчанию 256x256)")
 async def image(ctx: commands.Context, prompt, size="256x256"):
     """Нарисовать картинку с помощью Лоланда"""
-    await ctx.defer()
+    try:
+        await ctx.defer()
 
-    result = str(prompt)
+        result = str(prompt)
 
-    if size not in ["256x526", "512x512", "1024x1024"]:
-        size = "256x256"
+        if size not in ["256x526", "512x512", "1024x1024"]:
+            size = "256x256"
 
-    async with aiohttp.ClientSession() as session:
-        chatgpt = await get_image_response(session, result, size)
+        async with aiohttp.ClientSession() as session:
+            chatgpt = await get_image_response(session, result, size)
 
-    image_url = chatgpt['data'][0]['url']
+        image_url = chatgpt['data'][0]['url']
 
-    logger.info(f'{image_url}, Author: {ctx.author}')
+        logger.info(f'{image_url}, Author: {ctx.author}')
 
-    embed = discord.Embed()
-    embed.set_image(url=image_url)
+        embed = discord.Embed()
+        embed.set_image(url=image_url)
 
-    await ctx.reply(result, embed=embed)
+        await ctx.reply(result, embed=embed)
+    except KeyError:
+        embed = discord.Embed()
+        embed.set_image(url="https://static.wikia.nocookie.net/lobotomycorp/images/c/cb/CENSOREDPortrait.png/revision/latest?cb=20171119115551")
 
+        await ctx.reply("Ты чево удумал?", embed=embed)
 
 async def get_chat_response(session, result, messages):
 
