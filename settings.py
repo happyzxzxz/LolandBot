@@ -8,6 +8,8 @@ load_dotenv()
 
 DISCORD_API_SECRET = os.getenv("DISCORD_API_TOKEN")
 OPENAI_API_SECRET = os.getenv("OPENAI_API_TOKEN")
+GELBOORU_API_SECRET = os.getenv("GELBOORU_API_TOKEN")
+GELBOORU_USER_ID = os.getenv("GELBOORU_USER_ID")
 
 BASE_DIR = pathlib.Path(__file__).parent
 
