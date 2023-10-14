@@ -12,6 +12,7 @@ import emoji
 import openai
 import json
 import aiohttp
+from pygelbooru import Gelbooru
 
 
 logger = settings.logging.getLogger("bot")
@@ -446,6 +447,30 @@ async def clear_history(ctx: commands.Context):
         await ctx.reply('ХАРОШ: История успешно удалена')
     else:
         await ctx.reply('ТЫ ДАУН: Истории сообщений несуществует')
+
+
+@bot.hybrid_command(name="gelbooru")
+@app_commands.describe(q="Запрос")
+async def gelbooru(ctx: commands.Context, q):
+    """Рандомное изображение/гиф/видео с gelbooru по тегам"""
+    if ctx.channel.is_nsfw():
+        gelbooru = Gelbooru(settings.GELBOORU_API_SECRET, settings.GELBOORU_USER_ID)
+        q = q.split()
+
+        result = await gelbooru.random_post(tags=q, exclude_tags=['loli', 'guro', 'toddler', 'shota'])
+
+        if result:
+            embed = discord.Embed()
+            embed.set_image(url=result)
+
+            if '.mp4' in result.filename:
+                await ctx.reply(result)
+            else:
+                await ctx.reply(q[0], embed=embed)
+        else:
+            await ctx.reply("Запрос зацензурен (это может произойти случайно если в результате выпал пост с зацензуренными тегами)", ephemeral=True)
+    else:
+        await ctx.reply("Это не NSFW канал", ephemeral=True)
 
 
 def run_discord_bot():
