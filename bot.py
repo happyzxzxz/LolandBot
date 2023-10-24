@@ -4,6 +4,7 @@ import discord
 import responses
 from discord.ext import commands
 from discord import app_commands
+from discord.ext import tasks
 import settings
 import wavelink
 from typing import Any
@@ -165,12 +166,13 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 
 @bot.event
 async def on_wavelink_track_end(payload: wavelink.TrackEndEventPayload) -> None:
-    player: wavelink.Player | None = payload.player
+    player = payload.player
 
-    if player and player.queue:
-        await player.play(player.queue.get())
-    else:
-        await player.disconnect()
+    if player is not None:
+        if player.queue:
+            await player.play(player.queue.get())
+        else:
+            await player.disconnect()
 
 
 @bot.event
@@ -204,6 +206,7 @@ async def is_owner(interaction: discord.Interaction):
 @bot.event
 async def on_ready():
     logger.info(f'User: {bot.user} (ID: {bot.user.id})')
+    check_voice_channels.start()
 
     print(f"{bot.user} is now running!")
 
@@ -251,7 +254,7 @@ async def setup_hook():
 async def connect(ctx: commands.Context, *, search: str):
     """Добавляет в очередь треки или плейлисты"""
     if not ctx.voice_client:
-        if ctx.author.voice is None:
+        if ctx.author.voice.channel not in ctx.author.guild.voice_channels:
             await ctx.send('Зайди в войс ченел, шизоид', ephemeral=True)
             return
         vc: wavelink.Player = await ctx.author.voice.channel.connect(cls=wavelink.Player)
@@ -471,6 +474,13 @@ async def gelbooru(ctx: commands.Context, q):
             await ctx.reply("Запрос зацензурен (это может произойти случайно если в результате выпал пост с зацензуренными тегами)", ephemeral=True)
     else:
         await ctx.reply("Это не NSFW канал", ephemeral=True)
+
+
+@tasks.loop(seconds=5)
+async def check_voice_channels():
+    for player in bot.voice_clients:
+        if len(player.channel.members) == 1:
+            await player.disconnect()
 
 
 def run_discord_bot():
