@@ -469,9 +469,9 @@ async def gelbooru(ctx: commands.Context, q):
             if '.mp4' in result.filename:
                 await ctx.reply(result)
             else:
-                await ctx.reply(q[0], embed=embed)
+                await ctx.reply(' '.join(q), embed=embed)
         else:
-            await ctx.reply("Запрос зацензурен (это может произойти случайно если в результате выпал пост с зацензуренными тегами)", ephemeral=True)
+            await ctx.reply("Запрос зацензурен (это может произойти случайно, если в результате выпал пост с зацензуренными тегами) или картинки с такими тегами нет (теги необходимо вводить точно)", ephemeral=True)
     else:
         await ctx.reply("Это не NSFW канал", ephemeral=True)
 
