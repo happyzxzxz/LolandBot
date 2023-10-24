@@ -43,10 +43,11 @@ class AddMoreView(discord.ui.View):
         except discord.errors.HTTPException:
 
             if not self.ctx.voice_client:
-                if self.ctx.author.voice is None:
+                if self.ctx.author.voice:
+                    vc: wavelink.Player = await self.ctx.author.voice.channel.connect(cls=wavelink.Player)
+                else:
                     await self.ctx.send('Зайди в войс ченел, шизоид', ephemeral=True)
                     return
-                vc: wavelink.Player = await self.ctx.author.voice.channel.connect(cls=wavelink.Player)
             else:
                 vc: wavelink.Player = self.ctx.voice_client
 
@@ -81,14 +82,14 @@ class NaviPanelView(discord.ui.View):
         try:
             await interaction.response.send_message('')
         except discord.errors.HTTPException:
-            if self.ctx.author.voice is None:
+            if not self.ctx.author.voice:
                 await self.ctx.send('Зайди в войс ченел, шизоид', ephemeral=True)
-                await interaction.message.edit(content='Сейчас играет:', embed=self.embed, view=NaviPanelView(ctx=self.ctx, embed=self.embed))
+                await interaction.message.edit(embed=self.embed, view=NaviPanelView(ctx=self.ctx, embed=self.embed))
                 return
             else:
                 vc: wavelink.Player = self.ctx.voice_client
             await vc.skip()
-            await interaction.message.edit(content='Сейчас играет:', embed=self.embed, view=NaviPanelView(ctx=self.ctx, embed=self.embed))
+            await interaction.message.edit(embed=self.embed, view=NaviPanelView(ctx=self.ctx, embed=self.embed))
         self.stop()
 
     @discord.ui.button(emoji=emoji.emojize(':pause_button:'), style=discord.ButtonStyle.primary)
@@ -96,17 +97,17 @@ class NaviPanelView(discord.ui.View):
         try:
             await interaction.response.send_message('')
         except discord.errors.HTTPException:
-            if self.ctx.author.voice is None:
+            if not self.ctx.author.voice:
                 await self.ctx.send('Зайди в войс ченел, шизоид', ephemeral=True)
-                await interaction.message.edit(content='Сейчас играет:', embed=self.embed, view=NaviPanelView(ctx=self.ctx, embed=self.embed))
+                await interaction.message.edit(embed=self.embed, view=NaviPanelView(ctx=self.ctx, embed=self.embed))
                 return
             else:
                 vc: wavelink.Player = self.ctx.voice_client
             if not vc.paused and vc.current:
                 await vc.pause(True)
-                await interaction.message.edit(content='Сейчас играет:', embed=self.embed, view=NaviPanelView(ctx=self.ctx, embed=self.embed))
+                await interaction.message.edit(embed=self.embed, view=NaviPanelView(ctx=self.ctx, embed=self.embed))
             else:
-                await interaction.message.edit(content='Сейчас играет:', embed=self.embed, view=NaviPanelView(ctx=self.ctx, embed=self.embed))
+                await interaction.message.edit(embed=self.embed, view=NaviPanelView(ctx=self.ctx, embed=self.embed))
         self.stop()
 
     @discord.ui.button(emoji=emoji.emojize(':play_button:'), style=discord.ButtonStyle.primary)
@@ -114,17 +115,17 @@ class NaviPanelView(discord.ui.View):
         try:
             await interaction.response.send_message('')
         except discord.errors.HTTPException:
-            if self.ctx.author.voice is None:
+            if not self.ctx.author.voice:
                 await self.ctx.send('Зайди в войс ченел, шизоид', ephemeral=True)
-                await interaction.message.edit(content='Сейчас играет:', embed=self.embed, view=NaviPanelView(ctx=self.ctx, embed=self.embed))
+                await interaction.message.edit(embed=self.embed, view=NaviPanelView(ctx=self.ctx, embed=self.embed))
                 return
             else:
                 vc: wavelink.Player = self.ctx.voice_client
             if vc.paused and vc.current:
                 await vc.pause(False)
-                await interaction.message.edit(content='Сейчас играет:', embed=self.embed, view=NaviPanelView(ctx=self.ctx, embed=self.embed))
+                await interaction.message.edit(embed=self.embed, view=NaviPanelView(ctx=self.ctx, embed=self.embed))
             else:
-                await interaction.message.edit(content='Сейчас играет:', embed=self.embed, view=NaviPanelView(ctx=self.ctx, embed=self.embed))
+                await interaction.message.edit(embed=self.embed, view=NaviPanelView(ctx=self.ctx, embed=self.embed))
         self.stop()
 
     @discord.ui.button(emoji=emoji.emojize(':cross_mark:'), style=discord.ButtonStyle.primary)
@@ -132,9 +133,9 @@ class NaviPanelView(discord.ui.View):
         try:
             await interaction.response.send_message('')
         except discord.errors.HTTPException:
-            if self.ctx.author.voice is None:
+            if not self.ctx.author.voice:
                 await self.ctx.send('Зайди в войс ченел, шизоид', ephemeral=True)
-                await interaction.message.edit(content='Сейчас играет:', embed=self.embed, view=NaviPanelView(ctx=self.ctx, embed=self.embed))
+                await interaction.message.edit(embed=self.embed, view=NaviPanelView(ctx=self.ctx, embed=self.embed))
                 return
             else:
                 vc: wavelink.Player = self.ctx.voice_client
@@ -186,14 +187,14 @@ async def on_wavelink_track_start(payload: wavelink.TrackStartEventPayload) -> N
         url=payload.original.uri
     )
 
-    embed.set_author(name='Трек добавлен')
+    embed.set_author(name='Сейчас играет')
     embed.add_field(name="Длительность", value=time.strftime("%M:%S", time.gmtime(payload.original.length/1000)))
     embed.set_thumbnail(url=payload.original.artwork)
 
     view = NaviPanelView(ctx=payload.original.ctx, embed=embed)
 
     if payload.original:
-        await payload.original.ctx.send('Сейчас играет:', embed=embed, view=view)
+        await payload.original.ctx.send(embed=embed, view=view)
 
     await view.wait()
 
@@ -254,10 +255,11 @@ async def setup_hook():
 async def connect(ctx: commands.Context, *, search: str):
     """Добавляет в очередь треки или плейлисты"""
     if not ctx.voice_client:
-        if ctx.author.voice.channel not in ctx.author.guild.voice_channels:
+        if ctx.author.voice:
+            vc: wavelink.Player = await ctx.author.voice.channel.connect(cls=wavelink.Player)
+        else:
             await ctx.send('Зайди в войс ченел, шизоид', ephemeral=True)
             return
-        vc: wavelink.Player = await ctx.author.voice.channel.connect(cls=wavelink.Player)
     else:
         vc: wavelink.Player = ctx.voice_client
 
@@ -402,6 +404,7 @@ async def image(ctx: commands.Context, prompt, size="256x256"):
         embed.set_image(url="https://static.wikia.nocookie.net/lobotomycorp/images/c/cb/CENSOREDPortrait.png/revision/latest?cb=20171119115551")
 
         await ctx.reply("Ты чево удумал?", embed=embed)
+
 
 async def get_chat_response(session, result, messages):
 
