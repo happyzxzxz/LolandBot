@@ -8,7 +8,6 @@ from discord.ext import tasks
 import settings
 import wavelink
 from typing import Any
-import time
 import emoji
 import openai
 import json
@@ -188,7 +187,8 @@ async def on_wavelink_track_start(payload: wavelink.TrackStartEventPayload) -> N
     )
 
     embed.set_author(name='Сейчас играет')
-    embed.add_field(name="Длительность", value=time.strftime("%M:%S", time.gmtime(payload.original.length/1000)))
+    minutes, seconds = divmod(payload.original.length / 1000, 60)
+    embed.add_field(name="Длительность", value=f"{int(minutes):02d}:{int(seconds):02d}")
     embed.set_thumbnail(url=payload.original.artwork)
 
     view = NaviPanelView(ctx=payload.original.ctx, embed=embed)
@@ -291,13 +291,20 @@ async def connect(ctx: commands.Context, *, search: str):
 
 
 @bot.hybrid_command(name="skip")
-async def skip(ctx):
-    """Пропустить текущий трек (Количество не работает и не будет пока дауны не доделают свою ебаную бету)"""
+async def skip(ctx, count=1):
+    """Пропустить треки"""
 
     vc: wavelink.Player = ctx.voice_client
     if vc:
         if ctx.author.voice.channel.id == ctx.bot.voice_clients[0].channel.id:
-            await vc.skip()
+            if len(vc.queue) == 0 and vc.playing:
+                await vc.skip()
+                await ctx.reply('Спипнуто', delete_after=0, ephemeral=True)
+            else:
+                for _ in range(count-1):
+                    await vc.queue.delete(0)
+                await vc.skip()
+                await ctx.reply('Спипнуто', delete_after=0, ephemeral=True)
         else:
             await ctx.send('Тебя нет в воисе, шизофреник', ephemeral=True)
     else:
