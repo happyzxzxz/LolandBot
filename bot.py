@@ -486,6 +486,7 @@ async def clear_history(ctx: commands.Context):
 async def gelbooru(ctx: commands.Context, q):
     """Рандомное изображение/гиф/видео с gelbooru по тегам"""
     if ctx.channel.is_nsfw():
+        await ctx.defer()
         gelbooru = Gelbooru(settings.GELBOORU_API_SECRET, settings.GELBOORU_USER_ID)
         q = q.split()
 
