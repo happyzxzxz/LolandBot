@@ -127,6 +127,24 @@ class NaviPanelView(discord.ui.View):
                 await interaction.message.edit(embed=self.embed, view=NaviPanelView(ctx=self.ctx, embed=self.embed))
         self.stop()
 
+    @discord.ui.button(emoji=emoji.emojize(':input_numbers:'), style=discord.ButtonStyle.primary)
+    async def queue_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        try:
+            await interaction.response.send_message('')
+        except discord.errors.HTTPException:
+            if not self.ctx.author.voice:
+                await self.ctx.send('Зайди в войс ченел, шизоид', ephemeral=True)
+                await interaction.message.edit(embed=self.embed, view=NaviPanelView(ctx=self.ctx, embed=self.embed))
+                return
+            else:
+                vc: wavelink.Player = self.ctx.voice_client
+                await interaction.message.edit(embed=self.embed, view=NaviPanelView(ctx=self.ctx, embed=self.embed))
+                if vc.queue:
+                    await self.ctx.send(embed=discord.Embed(title="Первые 20 треков в очереди", description='Сейчас играет: ' + str(vc.current) + '\n' + '\n'.join([str(que) for que in vc.queue[:20]])), ephemeral=True)
+                else:
+                    await self.ctx.send(embed=discord.Embed(title="Сейчас играет:", description=vc.current), ephemeral=True)
+        self.stop()
+
     @discord.ui.button(emoji=emoji.emojize(':cross_mark:'), style=discord.ButtonStyle.primary)
     async def disconnect_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         try:
@@ -254,11 +272,12 @@ async def setup_hook():
 @app_commands.describe(search="url (yandex/soudcloud/spotify/youtube) или поисковой запрос")
 async def connect(ctx: commands.Context, *, search: str):
     """Добавляет в очередь треки или плейлисты"""
+    await ctx.defer()
     if not ctx.voice_client:
         if ctx.author.voice:
             vc: wavelink.Player = await ctx.author.voice.channel.connect(cls=wavelink.Player)
         else:
-            await ctx.send('Зайди в войс ченел, шизоид', ephemeral=True)
+            await ctx.reply('Зайди в войс ченел, шизоид', ephemeral=True, delete_after=2)
             return
     else:
         vc: wavelink.Player = ctx.voice_client
@@ -267,7 +286,7 @@ async def connect(ctx: commands.Context, *, search: str):
     # If the URL is a Spotify URL, make sure you have setup LavaSrc Plugin.
     tracks: wavelink.Search = await wavelink.Playable.search(search)
     if not tracks:
-        await ctx.send("Не ищется")
+        await ctx.reply("Не ищется")
         return
 
     view = AddMoreView(ctx=ctx, search=search)
@@ -275,14 +294,14 @@ async def connect(ctx: commands.Context, *, search: str):
     if isinstance(tracks, wavelink.Playlist):
         tracks.track_extras(ctx=ctx)
         added: int = await vc.queue.put_wait(tracks)
-        await ctx.send(f'Добавлено {added} треков из плейлиста {tracks.name} в очередь.', view=view)
+        await ctx.reply(f'Добавлено {added} треков из плейлиста {tracks.name} в очередь.', view=view)
 
     else:
         track: wavelink.Playable = tracks[0]
         track.ctx = ctx
 
         await vc.queue.put_wait(track)
-        await ctx.send(f'Добавил {track} в очередь.', view=view)
+        await ctx.reply(f'Добавил {track} в очередь.', view=view)
 
     if not vc.current:
         await vc.play(vc.queue.get())
