@@ -13,6 +13,9 @@ import openai
 import json
 import aiohttp
 from pygelbooru import Gelbooru
+import asyncio
+import time
+import re
 
 
 logger = settings.logging.getLogger("bot")
@@ -31,7 +34,7 @@ class Player(wavelink.Player):
 class AddMoreView(discord.ui.View):
 
     def __init__(self, ctx, search):
-        super().__init__()
+        super().__init__(timeout=3600)
         self.ctx = ctx
         self.search = search
 
@@ -72,7 +75,7 @@ class AddMoreView(discord.ui.View):
 class NaviPanelView(discord.ui.View):
 
     def __init__(self, ctx, embed):
-        super().__init__()
+        super().__init__(timeout=3600)
         self.ctx = ctx
         self.embed = embed
 
@@ -145,6 +148,22 @@ class NaviPanelView(discord.ui.View):
                     await self.ctx.send(embed=discord.Embed(title="Сейчас играет:", description=vc.current), ephemeral=True)
         self.stop()
 
+    @discord.ui.button(emoji=emoji.emojize(':shuffle_tracks_button:'), style=discord.ButtonStyle.primary)
+    async def shuffle_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        try:
+            await interaction.response.send_message('')
+        except discord.errors.HTTPException:
+            if not self.ctx.author.voice:
+                await self.ctx.send('Зайди в войс ченел, шизоид', ephemeral=True)
+                await interaction.message.edit(embed=self.embed, view=NaviPanelView(ctx=self.ctx, embed=self.embed))
+                return
+            else:
+                vc: wavelink.Player = self.ctx.voice_client
+                await interaction.message.edit(embed=self.embed, view=NaviPanelView(ctx=self.ctx, embed=self.embed))
+                if vc:
+                    vc.queue.shuffle()
+        self.stop()
+
     @discord.ui.button(emoji=emoji.emojize(':cross_mark:'), style=discord.ButtonStyle.primary)
     async def disconnect_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         try:
@@ -157,6 +176,7 @@ class NaviPanelView(discord.ui.View):
             else:
                 vc: wavelink.Player = self.ctx.voice_client
             if vc:
+                vc.cleanup()
                 await vc.disconnect()
                 await interaction.message.edit(content='Играло до этого:', embed=self.embed, view=NaviPanelView(ctx=self.ctx, embed=self.embed))
             else:
@@ -277,7 +297,7 @@ async def connect(ctx: commands.Context, *, search: str):
         if ctx.author.voice:
             vc: wavelink.Player = await ctx.author.voice.channel.connect(cls=wavelink.Player)
         else:
-            await ctx.reply('Зайди в войс ченел, шизоид', ephemeral=True, delete_after=2)
+            await ctx.reply('Зайди в войс ченел, шизоид', ephemeral=True, delete_after=1)
             return
     else:
         vc: wavelink.Player = ctx.voice_client
@@ -310,24 +330,50 @@ async def connect(ctx: commands.Context, *, search: str):
 
 
 @bot.hybrid_command(name="skip")
+@app_commands.describe(count="Количество пропускаемых треков")
 async def skip(ctx, count=1):
     """Пропустить треки"""
+    await ctx.defer(ephemeral=True)
 
     vc: wavelink.Player = ctx.voice_client
     if vc:
-        if ctx.author.voice.channel.id == ctx.bot.voice_clients[0].channel.id:
+        if ctx.author.voice:
             if len(vc.queue) == 0 and vc.playing:
                 await vc.skip()
-                await ctx.reply('Спипнуто', delete_after=0, ephemeral=True)
+                await ctx.reply('Спипнуто', delete_after=1, ephemeral=True)
             else:
                 for _ in range(count-1):
                     await vc.queue.delete(0)
                 await vc.skip()
-                await ctx.reply('Спипнуто', delete_after=0, ephemeral=True)
+                await ctx.reply('Спипнуто', delete_after=1, ephemeral=True)
         else:
-            await ctx.send('Тебя нет в воисе, шизофреник', ephemeral=True)
+            await ctx.reply('Тебя нет в воисе, шизофреник', delete_after=1, ephemeral=True)
     else:
-        await ctx.send('Меня нет в воисе, шизофреник', ephemeral=True)
+        await ctx.reply('Меня нет в воисе, шизофреник', delete_after=1, ephemeral=True)
+
+
+@bot.hybrid_command(name="seek")
+@app_commands.describe(stime="Время, на которое надо перемотать (можно указывать в секундах или в формате 00:00)")
+async def seek(ctx, stime):
+    """Перемотка текущего трека на заданное время"""
+    await ctx.defer(ephemeral=True)
+
+    vc: wavelink.Player = ctx.voice_client
+    if vc:
+        if ctx.author.voice:
+            if vc.playing:
+                if re.match(r'^\d+(:\d+)?$', stime) is None:
+                    await ctx.reply('По понятиям базарь, быдло', ephemeral=True, delete_after=1)
+                    return
+                if ':' in stime:
+                    stime = time.strptime(stime, '%M:%S')
+                    stime = str(int(stime[4])*60 + int(stime[5]))
+                await vc.seek(stime + '000')
+                await ctx.reply('Перемотано', delete_after=1, ephemeral=True)
+        else:
+            await ctx.reply('Тебя нет в воисе, шизофреник', delete_after=1, ephemeral=True)
+    else:
+        await ctx.reply('Меня нет в воисе, шизофреник', delete_after=1, ephemeral=True)
 
 
 @bot.hybrid_command(name="chate")
@@ -506,11 +552,14 @@ async def gelbooru(ctx: commands.Context, q):
         await ctx.reply("Это не NSFW канал", ephemeral=True)
 
 
-@tasks.loop(seconds=5)
+@tasks.loop(seconds=6)
 async def check_voice_channels():
     for player in bot.voice_clients:
         if len(player.channel.members) == 1:
-            await player.disconnect()
+            await asyncio.sleep(1)
+            if len(player.channel.members) == 1:
+                player.cleanup()
+                await player.disconnect()
 
 
 def run_discord_bot():
