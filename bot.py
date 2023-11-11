@@ -210,6 +210,7 @@ async def on_wavelink_track_end(payload: wavelink.TrackEndEventPayload) -> None:
         if player.queue:
             await player.play(player.queue.get())
         else:
+            player.cleanup()
             await player.disconnect()
 
 
