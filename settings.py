@@ -15,12 +15,15 @@ BASE_DIR = pathlib.Path(__file__).parent
 
 COGS_DIR = BASE_DIR / "cogs"
 
+list_of_paths = (BASE_DIR / "logs").glob('*.log')
+latest_path = max(list_of_paths, key=lambda p: p.stat().st_ctime)
+
 LOGGING_CONFIG = {
     "version": 1,
     "disabled_existing_loggers": False,
     "formatters": {
         "verbose": {
-            "format": "%(levelname)-10s - %(asctime)s - %(module)-15s : %(message)s"
+            "format": "%(levelname)-10s - %(asctime)s - %(name)-15s : %(message)s"
         },
         "standard": {
             "format": "%(levelname)-10s - %(name)-15s : %(message)s"
@@ -40,8 +43,9 @@ LOGGING_CONFIG = {
         "file": {
             "level": "INFO",
             "class": "logging.FileHandler",
-            "filename": "logs/infos.log",
-            "mode": "w"
+            "formatter": "verbose",
+            "filename": f"{latest_path}",
+            "mode": "a+"
         }
     },
     "loggers": {
@@ -51,9 +55,10 @@ LOGGING_CONFIG = {
             "propagate": False
         },
         "discord": {
-            "handlers": ['console2', "file"],
+            "handlers": ['console', 'console2', "file"],
             "level": "INFO",
-            "propagate": False
+            "propagate": False,
+            "encoding": "utf-8",
         }
     }
 }
