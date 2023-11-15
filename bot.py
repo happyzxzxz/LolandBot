@@ -1,5 +1,4 @@
 import os
-
 import discord
 import responses
 from discord.ext import commands
@@ -16,9 +15,11 @@ from pygelbooru import Gelbooru
 import asyncio
 import time
 import re
+import compressedlogger
 
 
-logger = settings.logging.getLogger("bot")
+logger = settings.logging.getLogger("discord")
+compressed_handler = compressedlogger.CompressedLogger(log_path="logs/", filename="BotLog", header="logfile", live_log_minutes=1, live_log_count=3, max_archive_size_mb=3, archive_days=2)
 openai.api_key = settings.OPENAI_API_SECRET
 
 
@@ -179,6 +180,7 @@ class NaviPanelView(discord.ui.View):
                 vc.cleanup()
                 await vc.disconnect()
                 await interaction.message.edit(content='Играло до этого:', embed=self.embed, view=NaviPanelView(ctx=self.ctx, embed=self.embed))
+                logger.info(f'Disconnected from the voice channel at the {vc.guild}')
             else:
                 await self.ctx.send('Я не в войс ченеле, шизоид', ephemeral=True)
                 await interaction.message.edit(content='Играло до этого:', embed=self.embed, view=NaviPanelView(ctx=self.ctx, embed=self.embed))
@@ -212,6 +214,7 @@ async def on_wavelink_track_end(payload: wavelink.TrackEndEventPayload) -> None:
         else:
             player.cleanup()
             await player.disconnect()
+            logger.info(f'Disconnected from the voice channel at the {player.guild}')
 
 
 @bot.event
@@ -245,10 +248,8 @@ async def is_owner(interaction: discord.Interaction):
 
 @bot.event
 async def on_ready():
-    logger.info(f'User: {bot.user} (ID: {bot.user.id})')
+    logger.info(f'User: {bot.user} (ID: {bot.user.id}) is now running!')
     check_voice_channels.start()
-
-    print(f"{bot.user} is now running!")
 
     await bot.tree.sync()
 
@@ -266,7 +267,7 @@ async def on_message(message):
     channel = str(message.channel)
     guild = str(message.guild)
 
-    print(f'{username} said {user_message} in the {channel} at the {guild}')
+    logger.info(f'{username} said {user_message} in the {channel} at the {guild}')
 
     if user_message[0] == '?':
         user_message = user_message[1:]
@@ -280,6 +281,7 @@ async def on_message(message):
 @bot.event
 async def on_command_error(ctx, error):
     if isinstance(error, Exception):
+        logger.error(error)
         await ctx.send(error)
 
 
@@ -316,6 +318,7 @@ async def connect(ctx: commands.Context, *, search: str):
         tracks.track_extras(ctx=ctx)
         added: int = await vc.queue.put_wait(tracks)
         await ctx.reply(f'Добавлено {added} треков из плейлиста {tracks.name} в очередь.', view=view)
+        logger.info(f'Добавлено {added} треков из плейлиста {tracks.name} в очередь. AUTHOR - {ctx.author}')
 
     else:
         track: wavelink.Playable = tracks[0]
@@ -323,9 +326,11 @@ async def connect(ctx: commands.Context, *, search: str):
 
         await vc.queue.put_wait(track)
         await ctx.reply(f'Добавил {track} в очередь.', view=view)
+        logger.info(f'Добавил {track} в очередь. AUTHOR - {ctx.author}')
 
     if not vc.current:
         await vc.play(vc.queue.get())
+        logger.info(f'Connected to the voice channel at the {vc.guild.name}. AUTHOR - {ctx.author}')
 
     await view.wait()
 
@@ -347,6 +352,7 @@ async def skip(ctx, count=1):
                     await vc.queue.delete(0)
                 await vc.skip()
                 await ctx.reply('Спипнуто', delete_after=1, ephemeral=True)
+                logger.info(f'Skipped {count} tracks')
         else:
             await ctx.reply('Тебя нет в воисе, шизофреник', delete_after=1, ephemeral=True)
     else:
@@ -382,6 +388,7 @@ async def seek(ctx, stime):
 async def chat(ctx: commands.Context, prompt):
     """Спросить что-нибудь у Лоланда (запрос и результат виден только вам)"""
     await ctx.defer(ephemeral=True)
+    logger.info(f'Starting openai chatgpt request.... AUTHOR - {ctx.author}')
 
     result = str(prompt)
     author_log = 'chatgptlog' + str(ctx.author.id) + '.json'
@@ -402,7 +409,7 @@ async def chat(ctx: commands.Context, prompt):
     async with aiohttp.ClientSession() as session:
         chatgpt = await get_chat_response(session, result, messages)
 
-    logger.info(f'{chatgpt["choices"][0]["message"]}, Author: {ctx.author}')
+    logger.info(f'Chatgpt response: {chatgpt["choices"][0]["message"]}. AUTHOR - {ctx.author}')
 
     reply = chatgpt["choices"][0]["message"]["content"]
     messages.append({"role": "assistant", "content": reply})
@@ -411,6 +418,7 @@ async def chat(ctx: commands.Context, prompt):
         json.dump(messages, messages_file, ensure_ascii=False)
 
     await ctx.reply(embed=discord.Embed(title=f'{result[:255]}', description=reply), ephemeral=True)
+    logger.info(f'Finished Openai chatgpt request. AUTHOR - {ctx.author}')
 
 
 @bot.hybrid_command(name="chat")
@@ -418,6 +426,7 @@ async def chat(ctx: commands.Context, prompt):
 async def chat(ctx: commands.Context, prompt):
     """Спросить что-нибудь у Лоланда (запрос и результат виден всем)"""
     await ctx.defer()
+    logger.info(f'Starting openai chatgpt request.... AUTHOR - {ctx.author}')
 
     result = str(prompt)
     author_log = 'chatgptlog' + str(ctx.author.id) + '.json'
@@ -438,7 +447,7 @@ async def chat(ctx: commands.Context, prompt):
     async with aiohttp.ClientSession() as session:
         chatgpt = await get_chat_response(session, result, messages)
 
-    logger.info(f'{chatgpt["choices"][0]["message"]}, Author: {ctx.author}')
+    logger.info(f'Chatgpt response: {chatgpt["choices"][0]["message"]}. AUTHOR - {ctx.author}')
 
     reply = chatgpt["choices"][0]["message"]["content"]
     messages.append({"role": "assistant", "content": reply})
@@ -447,6 +456,7 @@ async def chat(ctx: commands.Context, prompt):
         json.dump(messages, messages_file, ensure_ascii=False)
 
     await ctx.reply(embed=discord.Embed(title=f'{result[:255]}', description=reply))
+    logger.info(f'Finished Openai chatgpt request. AUTHOR - {ctx.author}')
 
 
 @bot.hybrid_command(name="image")
@@ -455,6 +465,7 @@ async def image(ctx: commands.Context, prompt, size="256x256"):
     """Нарисовать картинку с помощью Лоланда"""
     try:
         await ctx.defer()
+        logger.info(f'Starting openai DALL-E-2 request.... AUTHOR - {ctx.author}')
 
         result = str(prompt)
 
@@ -466,17 +477,19 @@ async def image(ctx: commands.Context, prompt, size="256x256"):
 
         image_url = chatgpt['data'][0]['url']
 
-        logger.info(f'{image_url}, Author: {ctx.author}')
+        logger.info(f'DALL-E-2 response: {image_url}. AUTHOR - {ctx.author}')
 
         embed = discord.Embed()
         embed.set_image(url=image_url)
 
         await ctx.reply(result, embed=embed)
+        logger.info(f'Finished Openai DALL-E-2 request. AUTHOR - {ctx.author}')
     except KeyError:
         embed = discord.Embed()
         embed.set_image(url="https://static.wikia.nocookie.net/lobotomycorp/images/c/cb/CENSOREDPortrait.png/revision/latest?cb=20171119115551")
 
         await ctx.reply("Ты чево удумал?", embed=embed)
+        logger.info(f'Censored Openai DALL-E-2 request. AUTHOR - {ctx.author}')
 
 
 async def get_chat_response(session, result, messages):
@@ -524,6 +537,7 @@ async def clear_history(ctx: commands.Context):
     if ('chatgptlog' + str(ctx.author.id) + '.json') in os.listdir('chatgptlogs'):
         os.remove('chatgptlogs/chatgptlog' + str(ctx.author.id) + '.json')
         await ctx.reply('ХАРОШ: История успешно удалена')
+        logger.info(f'{ctx.author} successfully deleted his openai chatgpt history')
     else:
         await ctx.reply('ТЫ ДАУН: Истории сообщений несуществует')
 
@@ -534,14 +548,21 @@ async def gelbooru(ctx: commands.Context, q):
     """Рандомное изображение/гиф/видео с gelbooru по тегам"""
     if ctx.channel.is_nsfw():
         await ctx.defer()
+
+        logger.info(f'Starting Gelbooru request.... AUTHOR - {ctx.author}')
+
         gelbooru = Gelbooru(settings.GELBOORU_API_SECRET, settings.GELBOORU_USER_ID)
         q = q.split()
 
         result = await gelbooru.random_post(tags=q, exclude_tags=['loli', 'guro', 'toddler', 'shota'])
 
         if result:
+            logger.info(f'Gelbooru response: {result}. AUTHOR - {ctx.author}')
+
             embed = discord.Embed()
             embed.set_image(url=result)
+
+            logger.info(f'Finished Gelbooru request. AUTHOR - {ctx.author}')
 
             if '.mp4' in result.filename:
                 await ctx.reply(result)
@@ -549,6 +570,7 @@ async def gelbooru(ctx: commands.Context, q):
                 await ctx.reply(' '.join(q), embed=embed)
         else:
             await ctx.reply("Запрос зацензурен (это может произойти случайно, если в результате выпал пост с зацензуренными тегами) или картинки с такими тегами нет (теги необходимо вводить точно)", ephemeral=True)
+            logger.info(f'Censored Gelbooru request. AUTHOR - {ctx.author}')
     else:
         await ctx.reply("Это не NSFW канал", ephemeral=True)
 
@@ -561,6 +583,7 @@ async def check_voice_channels():
             if len(player.channel.members) == 1:
                 player.cleanup()
                 await player.disconnect()
+                logger.info(f'Disconnected from the voice channel at the {player.guild}')
 
 
 def run_discord_bot():
