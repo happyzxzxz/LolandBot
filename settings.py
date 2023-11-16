@@ -42,10 +42,11 @@ LOGGING_CONFIG = {
         },
         "file": {
             "level": "INFO",
-            "class": "logging.FileHandler",
+            "class": "logging.handlers.TimedRotatingFileHandler",
             "formatter": "verbose",
-            "filename": f"{latest_path}",
-            "mode": "a+"
+            "filename": "logs/BotLog.log",
+            "backupCount": 10,
+            "when": "midnight",
         }
     },
     "loggers": {

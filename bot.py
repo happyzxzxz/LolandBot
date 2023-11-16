@@ -15,11 +15,9 @@ from pygelbooru import Gelbooru
 import asyncio
 import time
 import re
-import compressedlogger
 
 
 logger = settings.logging.getLogger("discord")
-compressed_handler = compressedlogger.CompressedLogger(log_path="logs/", filename="BotLog", header="logfile", live_log_minutes=1, live_log_count=3, max_archive_size_mb=3, archive_days=2)
 openai.api_key = settings.OPENAI_API_SECRET
 
 
