@@ -458,36 +458,42 @@ async def chat(ctx: commands.Context, prompt):
 
 
 @bot.hybrid_command(name="image")
-@app_commands.describe(prompt="Промпт картинки (можно на русском, но лучше на ангельском)", size="Размер картинки (допустимо 256x526, 512x512, 1024x1024, по умолчанию 256x256)")
-async def image(ctx: commands.Context, prompt, size="256x256"):
+@app_commands.describe(prompt="Промпт картинки (можно на русском, но лучше на ангельском)", size="Размер картинки (допустимо 256x526, 512x512, 1024x1024, по умолчанию 256x256, для dall-e-3 доступно только 1024x1024 (по умолчанию))", model="Выбрать модель из двух доступных. 2 для выбора DALL-E-2, 3 для выбора DALL-E-3. По умолчанию DALL-E-2")
+async def image(ctx: commands.Context, prompt, size="256x256", model="dall-e-2"):
     """Нарисовать картинку с помощью Лоланда"""
     try:
         await ctx.defer()
-        logger.info(f'Starting openai DALL-E-2 request.... AUTHOR - {ctx.author}')
+        logger.info(f'Starting openai DALL-E-2/3 request.... AUTHOR - {ctx.author}')
 
         result = str(prompt)
+
+        if model == "3":
+            size = "1024x1024"
+            model = "dall-e-3"
+        else:
+            model = "dall-e-2"
 
         if size not in ["256x526", "512x512", "1024x1024"]:
             size = "256x256"
 
         async with aiohttp.ClientSession() as session:
-            chatgpt = await get_image_response(session, result, size)
+            chatgpt = await get_image_response(session, result, size, model)
 
         image_url = chatgpt['data'][0]['url']
 
-        logger.info(f'DALL-E-2 response: {image_url}. AUTHOR - {ctx.author}')
+        logger.info(f'DALL-E-2/3 response: {image_url}. AUTHOR - {ctx.author}')
 
         embed = discord.Embed()
         embed.set_image(url=image_url)
 
         await ctx.reply(result, embed=embed)
-        logger.info(f'Finished Openai DALL-E-2 request. AUTHOR - {ctx.author}')
+        logger.info(f'Finished Openai DALL-E-2/3 request. AUTHOR - {ctx.author}')
     except KeyError:
         embed = discord.Embed()
         embed.set_image(url="https://static.wikia.nocookie.net/lobotomycorp/images/c/cb/CENSOREDPortrait.png/revision/latest?cb=20171119115551")
 
         await ctx.reply("Ты чево удумал?", embed=embed)
-        logger.info(f'Censored Openai DALL-E-2 request. AUTHOR - {ctx.author}')
+        logger.info(f'Censored Openai DALL-E-2/3 request. AUTHOR - {ctx.author}. Response: {chatgpt}')
 
 
 async def get_chat_response(session, result, messages):
@@ -509,7 +515,7 @@ async def get_chat_response(session, result, messages):
         return response_data
 
 
-async def get_image_response(session, result, size):
+async def get_image_response(session, result, size, model):
 
     headers = {
         "Authorization": f"Bearer {openai.api_key}",
@@ -520,6 +526,7 @@ async def get_image_response(session, result, size):
         "https://api.openai.com/v1/images/generations",
         headers=headers,
         json={
+            "model": model,
             "prompt": result,
             "n": 1,
             "size": size
