@@ -38,14 +38,16 @@ class Player(wavelink.Player):
 
 
 class AddMoreView(discord.ui.View):
+    """Handling 'Add one more time' button"""
 
     def __init__(self, ctx, search):
         super().__init__(timeout=3600)
         self.ctx = ctx
         self.search = search
 
-    @discord.ui.button(label="Добавить еще раз", style=discord.ButtonStyle.primary)
+    @discord.ui.button(label="Add one more time", style=discord.ButtonStyle.primary)
     async def one_more(self, interaction: discord.Interaction, button: discord.ui.Button):
+        """'Add one more time button itself'"""
         try:
             await interaction.response.send_message('')
         except discord.errors.HTTPException:
@@ -54,7 +56,7 @@ class AddMoreView(discord.ui.View):
                 if self.ctx.author.voice:
                     vc: wavelink.Player = await self.ctx.author.voice.channel.connect(cls=wavelink.Player)
                 else:
-                    await self.ctx.send('Зайди в войс ченел, шизоид', ephemeral=True)
+                    await self.ctx.send('Please enter the voice channel', ephemeral=True)
                     return
             else:
                 vc: wavelink.Player = self.ctx.voice_client
@@ -65,13 +67,13 @@ class AddMoreView(discord.ui.View):
                 tracks.track_extras(ctx=self.ctx)
                 added: int = await vc.queue.put_wait(tracks)
 
-                await interaction.message.edit(content=f'Добавлено {added} треков из плейлиста {tracks.name} в очередь.', view=AddMoreView(ctx=self.ctx, search=self.search))
+                await interaction.message.edit(content=f'Added {added} tracks from the playlist {tracks.name} in the queue.', view=AddMoreView(ctx=self.ctx, search=self.search))
             else:
                 track: wavelink.Playable = tracks[0]
                 track.ctx = self.ctx
                 await vc.queue.put_wait(track)
 
-                await interaction.message.edit(content=f'Добавил {track} в очередь.', view=AddMoreView(ctx=self.ctx, search=self.search))
+                await interaction.message.edit(content=f'Added {track} in the queue', view=AddMoreView(ctx=self.ctx, search=self.search))
 
             if not vc.current:
                 await vc.play(vc.queue.get())
@@ -79,6 +81,7 @@ class AddMoreView(discord.ui.View):
 
 
 class NaviPanelView(discord.ui.View):
+    """Handling all player buttons"""
 
     def __init__(self, ctx, embed):
         super().__init__(timeout=3600)
@@ -87,11 +90,12 @@ class NaviPanelView(discord.ui.View):
 
     @discord.ui.button(emoji=emoji.emojize(':next_track_button:'), style=discord.ButtonStyle.primary)
     async def skip_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        """Skip button"""
         try:
             await interaction.response.send_message('')
         except discord.errors.HTTPException:
             if not self.ctx.author.voice:
-                await self.ctx.send('Зайди в войс ченел, шизоид', ephemeral=True)
+                await self.ctx.send('Please enter the voice channel', ephemeral=True)
                 await interaction.message.edit(embed=self.embed, view=NaviPanelView(ctx=self.ctx, embed=self.embed))
                 return
             else:
@@ -102,11 +106,12 @@ class NaviPanelView(discord.ui.View):
 
     @discord.ui.button(emoji=emoji.emojize(':pause_button:'), style=discord.ButtonStyle.primary)
     async def pause_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        """Pause button"""
         try:
             await interaction.response.send_message('')
         except discord.errors.HTTPException:
             if not self.ctx.author.voice:
-                await self.ctx.send('Зайди в войс ченел, шизоид', ephemeral=True)
+                await self.ctx.send('Please enter the voice channel', ephemeral=True)
                 await interaction.message.edit(embed=self.embed, view=NaviPanelView(ctx=self.ctx, embed=self.embed))
                 return
             else:
@@ -120,11 +125,12 @@ class NaviPanelView(discord.ui.View):
 
     @discord.ui.button(emoji=emoji.emojize(':play_button:'), style=discord.ButtonStyle.primary)
     async def resume_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        """Resume button"""
         try:
             await interaction.response.send_message('')
         except discord.errors.HTTPException:
             if not self.ctx.author.voice:
-                await self.ctx.send('Зайди в войс ченел, шизоид', ephemeral=True)
+                await self.ctx.send('Please enter the voice channel', ephemeral=True)
                 await interaction.message.edit(embed=self.embed, view=NaviPanelView(ctx=self.ctx, embed=self.embed))
                 return
             else:
@@ -138,29 +144,31 @@ class NaviPanelView(discord.ui.View):
 
     @discord.ui.button(emoji=emoji.emojize(':input_numbers:'), style=discord.ButtonStyle.primary)
     async def queue_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        """Queue button"""
         try:
             await interaction.response.send_message('')
         except discord.errors.HTTPException:
             if not self.ctx.author.voice:
-                await self.ctx.send('Зайди в войс ченел, шизоид', ephemeral=True)
+                await self.ctx.send('Please enter the voice channel', ephemeral=True)
                 await interaction.message.edit(embed=self.embed, view=NaviPanelView(ctx=self.ctx, embed=self.embed))
                 return
             else:
                 vc: wavelink.Player = self.ctx.voice_client
                 await interaction.message.edit(embed=self.embed, view=NaviPanelView(ctx=self.ctx, embed=self.embed))
                 if vc.queue:
-                    await self.ctx.send(embed=discord.Embed(title="Первые 20 треков в очереди", description='Сейчас играет: ' + str(vc.current) + '\n' + '\n'.join([str(que) for que in vc.queue[:20]])), ephemeral=True)
+                    await self.ctx.send(embed=discord.Embed(title="First 20 tracks in the queue", description='Now playing: ' + str(vc.current) + '\n' + '\n'.join([str(que) for que in vc.queue[:20]])), ephemeral=True)
                 else:
-                    await self.ctx.send(embed=discord.Embed(title="Сейчас играет:", description=vc.current), ephemeral=True)
+                    await self.ctx.send(embed=discord.Embed(title="Now playing:", description=vc.current), ephemeral=True)
         self.stop()
 
     @discord.ui.button(emoji=emoji.emojize(':shuffle_tracks_button:'), style=discord.ButtonStyle.primary)
     async def shuffle_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        """Shuffle button"""
         try:
             await interaction.response.send_message('')
         except discord.errors.HTTPException:
             if not self.ctx.author.voice:
-                await self.ctx.send('Зайди в войс ченел, шизоид', ephemeral=True)
+                await self.ctx.send('Please enter the voice channel', ephemeral=True)
                 await interaction.message.edit(embed=self.embed, view=NaviPanelView(ctx=self.ctx, embed=self.embed))
                 return
             else:
@@ -172,11 +180,12 @@ class NaviPanelView(discord.ui.View):
 
     @discord.ui.button(emoji=emoji.emojize(':cross_mark:'), style=discord.ButtonStyle.primary)
     async def disconnect_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        """Disconnect button"""
         try:
             await interaction.response.send_message('')
         except discord.errors.HTTPException:
             if not self.ctx.author.voice:
-                await self.ctx.send('Зайди в войс ченел, шизоид', ephemeral=True)
+                await self.ctx.send('Please enter the voice channel', ephemeral=True)
                 await interaction.message.edit(embed=self.embed, view=NaviPanelView(ctx=self.ctx, embed=self.embed))
                 return
             else:
@@ -184,16 +193,17 @@ class NaviPanelView(discord.ui.View):
             if vc:
                 vc.cleanup()
                 await vc.disconnect()
-                await interaction.message.edit(content='Играло до этого:', embed=self.embed, view=NaviPanelView(ctx=self.ctx, embed=self.embed))
+                await interaction.message.edit(content='Was playing before:', embed=self.embed, view=NaviPanelView(ctx=self.ctx, embed=self.embed))
                 logger.info(f'Disconnected from the voice channel at the {vc.guild}')
             else:
-                await self.ctx.send('Я не в войс ченеле, шизоид', ephemeral=True)
-                await interaction.message.edit(content='Играло до этого:', embed=self.embed, view=NaviPanelView(ctx=self.ctx, embed=self.embed))
+                await self.ctx.send("I'm not in the voice channel", ephemeral=True)
+                await interaction.message.edit(content='Was playing before:', embed=self.embed, view=NaviPanelView(ctx=self.ctx, embed=self.embed))
         self.stop()
 
 
 @bot.event
 async def on_wavelink_track_end(payload: wavelink.TrackEndEventPayload) -> None:
+    """Handling bot disconnect on the queue end"""
     player = payload.player
 
     if player is not None:
@@ -207,6 +217,8 @@ async def on_wavelink_track_end(payload: wavelink.TrackEndEventPayload) -> None:
 
 @bot.event
 async def on_wavelink_track_start(payload: wavelink.TrackStartEventPayload) -> None:
+    """Sending an embed at the start of every track"""
+
     # Payload original is the "original" track that was added to the queue, with all custom attributes we set.
 
     embed = discord.Embed(
@@ -216,9 +228,9 @@ async def on_wavelink_track_start(payload: wavelink.TrackStartEventPayload) -> N
         url=payload.original.uri
     )
 
-    embed.set_author(name='Сейчас играет')
+    embed.set_author(name='Now playing')
     minutes, seconds = divmod(payload.original.length / 1000, 60)
-    embed.add_field(name="Длительность", value=f"{int(minutes):02d}:{int(seconds):02d}")
+    embed.add_field(name="Duration", value=f"{int(minutes):02d}:{int(seconds):02d}")
     embed.set_thumbnail(url=payload.original.artwork)
 
     view = NaviPanelView(ctx=payload.original.ctx, embed=embed)
@@ -229,13 +241,14 @@ async def on_wavelink_track_start(payload: wavelink.TrackStartEventPayload) -> N
     await view.wait()
 
 
-@bot.event
-async def is_owner(interaction: discord.Interaction):
-    return interaction.user.id == interaction.guild.owner_id
+# @bot.event
+# async def is_owner(interaction: discord.Interaction):
+#     return interaction.user.id == interaction.guild.owner_id
 
 
 @bot.event
 async def on_ready():
+    """Starts check_voice_channels and bot.tree.sync()"""
     logger.info(f'User: {bot.user} (ID: {bot.user.id}) is now running!')
     check_voice_channels.start()
 
@@ -244,6 +257,7 @@ async def on_ready():
 
 @bot.event
 async def on_message(message):
+    """Handling every message"""
     if message.author == bot.user:
         return
 
@@ -268,26 +282,28 @@ async def on_message(message):
 
 @bot.event
 async def on_command_error(ctx, error):
+    """Sending errors in the discord as messages"""
     if isinstance(error, Exception):
         await ctx.send(error)
 
 
 @bot.event
 async def setup_hook():
-    node: wavelink.Node = wavelink.Node(uri='http://localhost:2333', password='youshallnotpass')
+    """Connecting to the Lavalink"""
+    node: wavelink.Node = wavelink.Node(uri=settings.LAVALINK_SERVER_URL, password=settings.LAVALINK_PASSWORD)
     await wavelink.Pool.connect(client=bot, nodes=[node])
 
 
 @bot.hybrid_command(name="play")
-@app_commands.describe(search="url (yandex/soudcloud/spotify/youtube) или поисковой запрос")
+@app_commands.describe(search="url (yandex/soudcloud/spotify/youtube) or just the search on youtube")
 async def connect(ctx: commands.Context, *, search: str):
-    """Добавляет в очередь треки или плейлисты"""
+    """Adding tracks and playlists in the queue"""
     await ctx.defer()
     if not ctx.voice_client:
         if ctx.author.voice:
             vc: wavelink.Player = await ctx.author.voice.channel.connect(cls=wavelink.Player)
         else:
-            await ctx.reply('Зайди в войс ченел, шизоид', ephemeral=True, delete_after=1)
+            await ctx.reply('Please enter the voice channel', ephemeral=True, delete_after=1)
             return
     else:
         vc: wavelink.Player = ctx.voice_client
@@ -296,7 +312,7 @@ async def connect(ctx: commands.Context, *, search: str):
     # If the URL is a Spotify URL, make sure you have setup LavaSrc Plugin.
     tracks: wavelink.Search = await wavelink.Playable.search(search)
     if not tracks:
-        await ctx.reply("Не ищется")
+        await ctx.reply("Can not find it")
         return
 
     view = AddMoreView(ctx=ctx, search=search)
@@ -304,16 +320,16 @@ async def connect(ctx: commands.Context, *, search: str):
     if isinstance(tracks, wavelink.Playlist):
         tracks.track_extras(ctx=ctx)
         added: int = await vc.queue.put_wait(tracks)
-        await ctx.reply(f'Добавлено {added} треков из плейлиста {tracks.name} в очередь.', view=view)
-        logger.info(f'Добавлено {added} треков из плейлиста {tracks.name} в очередь. AUTHOR - {ctx.author}')
+        await ctx.reply(f'Added {added} tracks from the playlist {tracks.name} in the queue.', view=view)
+        logger.info(f'Added {added} tracks from the playlist {tracks.name} in the queue. AUTHOR - {ctx.author}')
 
     else:
         track: wavelink.Playable = tracks[0]
         track.ctx = ctx
 
         await vc.queue.put_wait(track)
-        await ctx.reply(f'Добавил {track} в очередь.', view=view)
-        logger.info(f'Добавил {track} в очередь. AUTHOR - {ctx.author}')
+        await ctx.reply(f'Added {track} in the queue.', view=view)
+        logger.info(f'Added {track} in the queue. AUTHOR - {ctx.author}')
 
     if not vc.current:
         await vc.play(vc.queue.get())
@@ -323,9 +339,9 @@ async def connect(ctx: commands.Context, *, search: str):
 
 
 @bot.hybrid_command(name="skip")
-@app_commands.describe(count="Количество пропускаемых треков")
+@app_commands.describe(count="Count of tracks that need to be skipped")
 async def skip(ctx, count=1):
-    """Пропустить треки"""
+    """Skipping tracks"""
     await ctx.defer(ephemeral=True)
 
     vc: wavelink.Player = ctx.voice_client
@@ -333,23 +349,23 @@ async def skip(ctx, count=1):
         if ctx.author.voice:
             if len(vc.queue) == 0 and vc.playing:
                 await vc.skip()
-                await ctx.reply('Спипнуто', delete_after=1, ephemeral=True)
+                await ctx.reply('Skipped', delete_after=1, ephemeral=True)
             else:
                 for _ in range(count-1):
                     await vc.queue.delete(0)
                 await vc.skip()
-                await ctx.reply('Спипнуто', delete_after=1, ephemeral=True)
+                await ctx.reply('Skipped', delete_after=1, ephemeral=True)
                 logger.info(f'Skipped {count} tracks')
         else:
-            await ctx.reply('Тебя нет в воисе, шизофреник', delete_after=1, ephemeral=True)
+            await ctx.reply('Please enter the voice channel', delete_after=1, ephemeral=True)
     else:
-        await ctx.reply('Меня нет в воисе, шизофреник', delete_after=1, ephemeral=True)
+        await ctx.reply("I'm not in the voice channel", delete_after=1, ephemeral=True)
 
 
 @bot.hybrid_command(name="seek")
-@app_commands.describe(stime="Время, на которое надо перемотать (можно указывать в секундах или в формате 00:00)")
+@app_commands.describe(stime="Time to rewind (can be specified in seconds or in 00:00 format)")
 async def seek(ctx, stime):
-    """Перемотка текущего трека на заданное время"""
+    """Rewind the current track by a specified time"""
     await ctx.defer(ephemeral=True)
 
     vc: wavelink.Player = ctx.voice_client
@@ -357,23 +373,23 @@ async def seek(ctx, stime):
         if ctx.author.voice:
             if vc.playing:
                 if re.match(r'^\d+(:\d+)?$', stime) is None:
-                    await ctx.reply('По понятиям базарь, быдло', ephemeral=True, delete_after=1)
+                    await ctx.reply('Please enter seconds or 00:00', ephemeral=True, delete_after=1)
                     return
                 if ':' in stime:
                     stime = time.strptime(stime, '%M:%S')
                     stime = str(int(stime[4])*60 + int(stime[5]))
                 await vc.seek(stime + '000')
-                await ctx.reply('Перемотано', delete_after=1, ephemeral=True)
+                await ctx.reply('Rewound', delete_after=1, ephemeral=True)
         else:
-            await ctx.reply('Тебя нет в воисе, шизофреник', delete_after=1, ephemeral=True)
+            await ctx.reply('Please enter the voice channel', delete_after=1, ephemeral=True)
     else:
-        await ctx.reply('Меня нет в воисе, шизофреник', delete_after=1, ephemeral=True)
+        await ctx.reply("I'm not in the voice channel", delete_after=1, ephemeral=True)
 
 
 @bot.hybrid_command(name="chate")
-@app_commands.describe(prompt="Запрос Лоланду (если что-то серьезное, то лучше делать точнее и с подробностями)")
+@app_commands.describe(prompt="AI request (if something is serious, then it is better to do it more precisely and with details)")
 async def chat(ctx: commands.Context, prompt):
-    """Спросить что-нибудь у Лоланда (запрос и результат виден только вам)"""
+    """Ask AI something (the request and the result are visible only to you)"""
     await ctx.defer(ephemeral=True)
     logger.info(f'Starting openai chatgpt request.... AUTHOR - {ctx.author}')
 
@@ -414,9 +430,9 @@ async def chat(ctx: commands.Context, prompt):
 
 
 @bot.hybrid_command(name="chat")
-@app_commands.describe(prompt="Запрос Лоланду (если что-то серьезное, то лучше делать точнее и с подробностями)")
+@app_commands.describe(prompt="AI request (if something is serious, then it is better to do it more precisely and with details)")
 async def chat(ctx: commands.Context, prompt):
-    """Спросить что-нибудь у Лоланда (запрос и результат виден всем)"""
+    """Ask AI something (the request and the result are visible to everyone)"""
     await ctx.defer()
     logger.info(f'Starting openai chatgpt request.... AUTHOR - {ctx.author}')
 
@@ -458,12 +474,12 @@ async def chat(ctx: commands.Context, prompt):
 
 @bot.hybrid_command(name="image")
 @app_commands.describe(
-    prompt="Промпт картинки (можно на русском, но лучше на ангельском)",
-    size="Размер картинки (допустимо 256x526, 512x512, 1024x1024, по умолчанию 256x256, для dall-e-3 доступно только 1024x1024 (по умолчанию))",
-    model="Выбрать модель из двух доступных. 2 для выбора DALL-E-2, 3 для выбора DALL-E-3. По умолчанию DALL-E-2"
+    prompt="Image prompt",
+    size="Picture size (allowed 256x526, 512x512, 1024x1024, default 256x256). Only 1024x1024 available for dall-e-3 (default))",
+    model="Select a model from two available. 2 to select DALL-E-2, 3 to select DALL-E-3. Default DALL-E-2"
 )
 async def image(ctx: commands.Context, prompt, size="256x256", model="dall-e-2"):
-    """Нарисовать картинку с помощью Лоланда"""
+    """Draw an image with AI"""
     try:
         await ctx.defer()
         logger.info(f'Starting openai DALL-E-2/3 request.... AUTHOR - {ctx.author}')
@@ -495,25 +511,25 @@ async def image(ctx: commands.Context, prompt, size="256x256", model="dall-e-2")
         embed = discord.Embed()
         embed.set_image(url="https://static.wikia.nocookie.net/lobotomycorp/images/c/cb/CENSOREDPortrait.png/revision/latest?cb=20171119115551")
 
-        await ctx.reply("Ты чево удумал?", embed=embed)
+        await ctx.reply("I don't think so", embed=embed)
         logger.info(f'Censored Openai DALL-E-2/3 request. AUTHOR - {ctx.author}. Response: {chatgpt}')
 
 
 @bot.hybrid_command(name="clear_history")
 async def clear_history(ctx: commands.Context):
-    """Удаляет всю вашу историю сообщений с Лоландом (например, если токенов слишком много)"""
+    """Deletes your entire message history with AI (for example, if there are too many tokens)"""
     if ('chatgptlog' + str(ctx.author.id) + '.json') in os.listdir('chatgptlogs'):
         os.remove('chatgptlogs/chatgptlog' + str(ctx.author.id) + '.json')
-        await ctx.reply('ХАРОШ: История успешно удалена')
+        await ctx.reply('History deleted successfully')
         logger.info(f'{ctx.author} successfully deleted his openai chatgpt history')
     else:
-        await ctx.reply('ТЫ ДАУН: Истории сообщений несуществует')
+        await ctx.reply('There is no message history')
 
 
 @bot.hybrid_command(name="gelbooru")
-@app_commands.describe(q="Запрос")
+@app_commands.describe(q="Tags (separated by the space)")
 async def gelbooru(ctx: commands.Context, q):
-    """Рандомное изображение/гиф/видео с gelbooru по тегам"""
+    """Random image/GIF/video from gelbooru by tags"""
     if ctx.channel.is_nsfw():
         await ctx.defer()
 
@@ -538,12 +554,12 @@ async def gelbooru(ctx: commands.Context, q):
                 await ctx.reply(' '.join(q), embed=embed)
         else:
             await ctx.reply(
-                "Запрос зацензурен (это может произойти случайно, если"
-                "в результате выпал пост с зацензуренными тегами) или картинки"
-                "с такими тегами нет (теги необходимо вводить точно)", ephemeral=True)
+                "The request was censored (this may happen accidentally if"
+                "as a result, a post with censored tags or pictures appeared)"
+                "or there are no picture with such tags (tags must be entered accurately)", ephemeral=True)
             logger.info(f'Censored Gelbooru request. AUTHOR - {ctx.author}')
     else:
-        await ctx.reply("Это не NSFW канал", ephemeral=True)
+        await ctx.reply("This is not a NSFW channel", ephemeral=True)
 
 
 @tasks.loop(seconds=6)
