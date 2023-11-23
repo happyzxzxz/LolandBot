@@ -20,13 +20,6 @@ import functions
 logger = settings.logging.getLogger("discord")
 openai.api_key = settings.OPENAI_API_SECRET
 
-intents = discord.Intents.default()
-intents.typing = False
-intents.presences = False
-intents.message_content = True
-
-bot = commands.Bot(command_prefix="@!@", intents=intents)
-
 
 class Player(wavelink.Player):
     """A Player with a DJ attribute."""
@@ -199,6 +192,14 @@ class NaviPanelView(discord.ui.View):
                 await self.ctx.send("I'm not in the voice channel", ephemeral=True)
                 await interaction.message.edit(content='Was playing before:', embed=self.embed, view=NaviPanelView(ctx=self.ctx, embed=self.embed))
         self.stop()
+
+
+intents = discord.Intents.default()
+intents.typing = False
+intents.presences = False
+intents.message_content = True
+
+bot = commands.Bot(command_prefix="@!@", intents=intents)
 
 
 @bot.event
