@@ -311,9 +311,16 @@ async def connect(ctx: commands.Context, *, search: str):
 
     # Could be a URL or Plain Search...
     # If the URL is a Spotify URL, make sure you have setup LavaSrc Plugin.
-    tracks: wavelink.Search = await wavelink.Playable.search(search)
-    if not tracks:
-        await ctx.reply("Can not find it")
+    if "&list=LL&" in search:
+        search = search[0:search.index("&list=LL&")]
+
+    try:
+        tracks: wavelink.Search = await wavelink.Playable.search(search)
+        if not tracks:
+            await ctx.reply("Не ищется")
+            return
+    except wavelink.LavalinkLoadException:
+        await ctx.reply("Плейлиста не существует", ephemeral=True, delete_after=1)
         return
 
     view = AddMoreView(ctx=ctx, search=search)
