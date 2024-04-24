@@ -317,10 +317,10 @@ async def connect(ctx: commands.Context, *, search: str):
     try:
         tracks: wavelink.Search = await wavelink.Playable.search(search)
         if not tracks:
-            await ctx.reply("Не ищется")
+            await ctx.reply("Can't find")
             return
     except wavelink.LavalinkLoadException:
-        await ctx.reply("Плейлиста не существует", ephemeral=True, delete_after=1)
+        await ctx.reply("There are no such playlist", ephemeral=True, delete_after=1)
         return
 
     view = AddMoreView(ctx=ctx, search=search)
