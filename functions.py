@@ -13,7 +13,7 @@ async def get_chat_response(session, result, messages):
         "https://api.openai.com/v1/chat/completions",
         headers=headers,
         json={
-            "model": "gpt-3.5-turbo-0301",
+            "model": "gpt-3.5-turbo",
             "messages": [{"role": "system", "content": result}] + messages
         },
     ) as response:
