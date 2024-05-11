@@ -76,10 +76,16 @@ class AddMoreView(discord.ui.View):
 class NaviPanelView(discord.ui.View):
     """Handling all player buttons"""
 
-    def __init__(self, ctx, embed):
+    def __init__(self, ctx, embed, loop=None):
         super().__init__(timeout=3600)
         self.ctx = ctx
         self.embed = embed
+        self.loop = loop
+        self.update_button()
+
+    def update_button(self):
+        self.emoji_value = ':repeat_single_button:' if self.loop else ':repeat_button:'
+        self.loop_button.emoji = emoji.emojize(self.emoji_value)
 
     @discord.ui.button(emoji=emoji.emojize(':next_track_button:'), style=discord.ButtonStyle.primary)
     async def skip_button(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -169,6 +175,29 @@ class NaviPanelView(discord.ui.View):
                 await interaction.message.edit(embed=self.embed, view=NaviPanelView(ctx=self.ctx, embed=self.embed))
                 if vc:
                     vc.queue.shuffle()
+        self.stop()
+
+    @discord.ui.button(style=discord.ButtonStyle.primary)
+    async def loop_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        """Loop button"""
+        try:
+            await interaction.response.send_message('')
+        except discord.errors.HTTPException:
+            if not self.ctx.author.voice:
+                await self.ctx.send('Please enter the voice channel', ephemeral=True)
+                await interaction.message.edit(embed=self.embed, view=NaviPanelView(ctx=self.ctx, embed=self.embed))
+                return
+            else:
+                vc: wavelink.Player = self.ctx.voice_client
+                if vc:
+                    if vc.queue.mode is not wavelink.QueueMode.normal:
+                        await vc.queue.delete(0)
+                        vc.queue.mode = wavelink.QueueMode.normal
+                        await interaction.message.edit(embed=self.embed, view=NaviPanelView(ctx=self.ctx, embed=self.embed, loop=False))
+                    else:
+                        await vc.queue.put_wait(vc.current)
+                        vc.queue.mode = wavelink.QueueMode.loop
+                        await interaction.message.edit(embed=self.embed, view=NaviPanelView(ctx=self.ctx, embed=self.embed, loop=True))
         self.stop()
 
     @discord.ui.button(emoji=emoji.emojize(':cross_mark:'), style=discord.ButtonStyle.primary)
