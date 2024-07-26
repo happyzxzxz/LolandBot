@@ -1,0 +1,9 @@
+pyyaml
+pygelbooru
+wavelink
+openai
+saucenao-api
+emoji
+discord
+python-dotenv
+git+https://github.com/happyzxzxz/vk_api_5.131.git#egg=vk_api
