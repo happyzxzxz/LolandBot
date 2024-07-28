@@ -1,0 +1,126 @@
+lavalink:
+  plugins: null
+  pluginsDir: ./plugins
+  server:
+    bufferDurationMs: 400
+    filters:
+      channelMix: true
+      distortion: true
+      equalizer: true
+      karaoke: true
+      lowPass: true
+      rotation: true
+      timescale: true
+      tremolo: true
+      vibrato: true
+      volume: true
+    frameBufferDurationMs: 5000
+    gc-warnings: true
+    opusEncodingQuality: 10
+    password: youshallnotpass
+    playerUpdateInterval: 5
+    resamplingQuality: HIGH
+    soundcloudSearchEnabled: true
+    sources:
+      bandcamp: true
+      http: true
+      local: true
+      soundcloud: true
+      twitch: true
+      vimeo: true
+      youtube: false
+    trackStuckThresholdMs: 10000
+    useSeekGhosting: true
+    youtubePlaylistLoadLimit: 6
+    youtubeSearchEnabled: true
+logging:
+  file:
+    path: ./logs/
+  level:
+    lavalink: INFO
+    root: INFO
+  logback:
+    rollingpolicy:
+      max-file-size: 1GB
+      max-history: 30
+  request:
+    enabled: true
+    includeClientInfo: true
+    includeHeaders: false
+    includePayload: true
+    includeQueryString: true
+    maxPayloadLength: 10000
+metrics:
+  prometheus:
+    enabled: false
+    endpoint: /metrics
+plugins:
+  lavasrc:
+    applemusic:
+      albumLoadLimit: 6
+      countryCode: US
+      keyID: your key id
+      mediaAPIToken: your apple music api token
+      musicKitKey: '-----BEGIN PRIVATE KEY-----
+
+        your key
+
+        -----END PRIVATE KEY-----
+
+        '
+      playlistLoadLimit: 6
+      teamID: your team id
+    deezer:
+      masterDecryptionKey: your master decryption key
+    flowerytts:
+      audioFormat: mp3
+      silence: 0
+      speed: 1.0
+      translate: false
+      voice: default voice
+    providers:
+    - ytsearch:"%ISRC%"
+    - ytsearch:%QUERY%
+    sources:
+      applemusic: false
+      deezer: false
+      flowerytts: false
+      spotify: true
+      yandexmusic: true
+      youtube: false
+    spotify:
+      albumLoadLimit: 6
+      clientId: myid
+      clientSecret: mysecret
+      countryCode: US
+      playlistLoadLimit: 6
+    yandexmusic:
+      accessToken: mytoken
+  youtube:
+    ANDROID:
+      playback: false
+    TVHTML5EMBEDDED:
+      playlistLoading: true
+      searching: true
+      videoLoading: true
+    WEB:
+      playback: true
+    allowDirectPlaylistIds: true
+    allowDirectVideoIds: true
+    allowSearch: true
+    clients:
+    - MUSIC
+    - WEB
+    - ANDROID
+    - ANDROID_TESTSUITE
+    - TVHTML5EMBEDDED
+    - ANDROID_LITE
+    - MEDIA_CONNECT
+    - IOS
+    enabled: true
+sentry:
+  dsn: ''
+  environment: ''
+server:
+  address: localhost
+  port: 2333
