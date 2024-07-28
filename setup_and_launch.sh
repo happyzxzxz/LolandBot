@@ -53,6 +53,7 @@ if [ ! -d "$BASE_DIR/venv" ]; then
     # Activate the virtual environment and install dependencies
     source "$BASE_DIR/venv/bin/activate"
     pip install -r "$BASE_DIR/requirements.txt"
+
 else
     echo "Virtual environment already exists. Skipping setup."
     source "$BASE_DIR/venv/bin/activate"
@@ -62,14 +63,15 @@ echo "Setup complete!"
 
 # Start the Python bot in the background
 echo "Starting Python bot..."
-nohup python3 "$BASE_DIR/main.py" > "$BASE_DIR/bot.log" 2>&1 &
+nohup python3 "$BASE_DIR/main.py" > "$BASE_DIR/logs/BotLog.log" 2>&1 &
 
 # Wait for 2 seconds just in case
 sleep 2
 
 # Start Lavalink server in the background
 echo "Starting Lavalink server..."
-nohup java -jar "$LAVALINK_FILE" > "$BASE_DIR/lavalink.log" 2>&1 &
+cd "$BASE_DIR/Lavalink"
+nohup java -jar "$LAVALINK_FILE" > "$BASE_DIR/Lavalink/logs/spring.log" 2>&1 &
 
 echo "All processes started!"
 

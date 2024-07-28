@@ -2,8 +2,8 @@ pyyaml
 pygelbooru
 wavelink
 openai
-saucenao-api
 emoji
 discord
 python-dotenv
+git+https://github.com/jericjan/saucenao_api#egg=saucenao_api
 git+https://github.com/happyzxzxz/vk_api_5.131.git#egg=vk_api
