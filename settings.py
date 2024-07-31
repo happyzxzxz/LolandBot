@@ -11,6 +11,9 @@ ENABLED_COMMANDS = {
     "skip": True,
     "play": True,
     "seek": True,
+    "create_new_equalizer": True,
+    "equalizer": True,
+    "filter": True,
     "sauce": True, # You need SAUCENAO_API_KEY
     "reaction_role": True,
     "image": True, # You need OPENAI_API_TOKEN
