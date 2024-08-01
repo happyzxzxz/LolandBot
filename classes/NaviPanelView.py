@@ -101,6 +101,7 @@ class NaviPanelView(discord.ui.View):
     @discord.ui.button(emoji=emoji.emojize(':page_facing_up:'), style=discord.ButtonStyle.secondary)
     async def queue_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.defer()
+
         if not self.ctx.author.voice:
             await self.ctx.send('Connect to the voice channel', ephemeral=True)
             await interaction.message.edit(embed=self.embed, view=NaviPanelView(ctx=self.ctx, embed=self.embed, loop=self.check_loop()))
@@ -109,30 +110,18 @@ class NaviPanelView(discord.ui.View):
             vc: wavelink.Player = self.ctx.voice_client
             await interaction.message.edit(embed=self.embed, view=NaviPanelView(ctx=self.ctx, embed=self.embed, loop=self.check_loop()))
             if vc.queue:
-                queue_list = []
-                for que in vc.queue[:20]:
-                    try:
-                        title = que.track_title  # Attempt to get the track title
-                    except AttributeError:
-                        title = str(que)  # Fallback to the string representation of the item
-                    queue_list.append(title)
-
-                current_track = getattr(vc.current, 'track_title', str(vc.current))
+                queue_list = [f'[{que.title}]({que.uri}) - {que.author}' for que in vc.queue[:20]]
 
                 embed = discord.Embed(
                     title="First 20 tracks in the queue:",
-                    description='Now playing: ' + current_track + '\n' + '\n'.join(queue_list)
+                    description='Now playing: ' + f'[{vc.current.title}]({vc.current.uri}) - {vc.current.author}' + '\n' + '\n'.join(queue_list)
                 )
                 await self.ctx.send(embed=embed, ephemeral=True)
             else:
-                try:
-                    current_title = vc.current.track_title  # Attempt to get the track title
-                except AttributeError:
-                    current_title = str(vc.current)  # Fallback to the string representation of the item
 
                 embed = discord.Embed(
                     title="Now playing:",
-                    description=current_title
+                    description=f'[{vc.current.title}]({vc.current.uri}) - {vc.current.author}'
                 )
                 await self.ctx.send(embed=embed, ephemeral=True)
         self.stop()
@@ -140,6 +129,7 @@ class NaviPanelView(discord.ui.View):
     @discord.ui.button(emoji=emoji.emojize(':cross_mark:'), style=discord.ButtonStyle.secondary)
     async def disconnect_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.defer()
+
         if not self.ctx.author.voice:
             await self.ctx.send('Connect to the voice channel', ephemeral=True)
             await interaction.message.edit(embed=self.embed, view=NaviPanelView(ctx=self.ctx, embed=self.embed, loop=self.check_loop()))

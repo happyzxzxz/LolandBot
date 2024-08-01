@@ -1,3 +1,5 @@
+import typing
+
 from discord.ext import commands
 from discord import app_commands
 from bot import logger
@@ -16,13 +18,12 @@ class reaction_role(commands.Cog):
         role="Name of the role that bot will give (without @)", emoj="Emoji (like this :nerd:)",
         deleted="1 to delete, 0 to add (default 0)")
     @commands.has_permissions(administrator=True)
-    async def create_new_reaction_role(self, ctx, message_id, role, emoj, deleted="0"):
+    async def create_new_reaction_role(self, ctx, message_id, role, emoj, deleted: typing.Literal[0, 1] = 0):
         """Add or delete reaction role"""
         try:
 
             await ctx.defer(ephemeral=True)
 
-            deleted = int(deleted)
             if not (message_id.isdigit()):
                 await ctx.send("Message ID should be digits only", ephemeral=True)
                 return

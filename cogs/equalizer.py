@@ -1,4 +1,3 @@
-import typing
 from discord.ext import commands
 from bot import logger
 import wavelink
@@ -27,11 +26,14 @@ class equalizer(commands.Cog):
         with open("jsons/equalizer_bands.json", "r") as file:
             equalizers = json.loads(file.read())
 
-        if f'{name}_{ctx.message.guild.id}' not in equalizers:
+        if not(f'{name}_{ctx.message.guild.id}' in equalizers or f'{name}_nodelete' in equalizers):
             await ctx.send("Wrong arguments")
             return
 
-        bands = equalizers[f'{name}_{ctx.message.guild.id}']
+        if f'{name}_nodelete' in equalizers:
+            bands = equalizers[f'{name}_nodelete']
+        else:
+            bands = equalizers[f'{name}_{ctx.message.guild.id}']
 
         filters.equalizer.set(bands=bands)
         await vc.set_filters(filters)

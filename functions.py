@@ -1,3 +1,5 @@
+import lavalink
+
 import responses
 import openai
 from json import loads
@@ -5,6 +7,10 @@ from discord import Embed
 import vk_api
 import re
 import settings
+import struct
+from base64 import b64encode
+import wavelink
+from classes.DataWriter import DataWriter
 
 
 async def get_chat_response(session, result, messages):
@@ -122,21 +128,74 @@ def vk_get_playlist_title(token, music_url):
     return playlist_title
 
 
-def set_playable_vk(vk_track, track, ctx):
+def lavalink_encode_tracks(track):
 
-    track = track[0]
-    track.ctx = ctx
-    track.track_title = vk_track['title']
-    track.track_author = vk_track['artist']
+    writer = DataWriter()
+    version = struct.pack('B', 3)
+    writer.write_byte(version)
+    _write_track_common(track, writer)
+    writer.write_nullable_utf(track['artworkUrl'])
+    writer.write_nullable_utf(track['isrc'])
+    writer.write_utf(track['sourceName'])
+
+    writer.write_utf('mp3')
+    writer.write_long(track['position'])
+
+    enc = writer.finish()
+    return b64encode(enc).decode()
+
+
+def _write_track_common(track, writer: DataWriter):
+    writer.write_utf(track['title'])
+    writer.write_utf(track['author'])
+    writer.write_long(track['length'])
+    writer.write_utf(track['identifier'])
+    writer.write_boolean(track['isStream'])
+    writer.write_nullable_utf(track['uri'])
+
+
+def wavelink_create_playable(vk_track, ctx):
+    """
+    I know that that's not very good, but it seems like the most sane option here
+    to maintain low latency and not get rate limited by vk when there are too many tracks
+    because lavalink makes a request to the url when creating Playable with search
+    """
 
     if any(key == 'album' for key in vk_track):
-        track.track_artwork = vk_track['album']['thumb']['photo_300']
+        track_artwork = vk_track['album']['thumb']['photo_300']
     else:
-        track.track_artwork = None
+        track_artwork = None
 
     if any('access_key' in key for key in vk_track):
-        track.track_uri = 'https://vk.com/audio' + vk_track['ads']['content_id'] + '_' + vk_track['access_key']
+        track_uri = 'https://vk.com/audio' + vk_track['ads']['content_id'] + '_' + vk_track['access_key']
     else:
-        track.track_uri = 'https://vk.com/audio' + vk_track['ads']['content_id']
+        track_uri = 'https://vk.com/audio' + vk_track['ads']['content_id']
+
+    info = {
+        'identifier': vk_track['url'],
+        'isSeekable': True,
+        'author': vk_track['artist'],
+        'length': vk_track['duration'],
+        'isStream': False,
+        'position': 0,
+        'title': vk_track['title'],
+        'uri': track_uri,
+        'sourceName': 'http',
+        'artworkUrl': track_artwork,
+        'isrc': None
+    }
+
+    data = {
+        'encoded': lavalink_encode_tracks(info),
+        'info': info,
+        'pluginInfo': {
+            'probeInfo': 'mp3'
+        },
+        'userData': {}
+    }
+
+    track = wavelink.Playable(data=data)
+    track.ctx = ctx
 
     return track
+

@@ -1,3 +1,5 @@
+import typing
+
 from discord.ext import commands
 from discord import app_commands
 from bot import logger
@@ -13,10 +15,10 @@ class image(commands.Cog):
     @commands.hybrid_command(name="image")
     @app_commands.describe(
         prompt="Your prompt",
-        size="Image size (only 256x526, 512x512, 1024x1024, default is 256x256, for dall-e-3 only 1024x1024)",
-        model="Choose model. 2 for DALL-E-2, 3 for DALL-E-3. Default 2"
+        size="Image size (default is 256x256, for dall-e-3 only 1024x1024)",
+        model="Choose model. Default dall-e-2"
     )
-    async def image(self, ctx: commands.Context, prompt, size="256x256", model="dall-e-2"):
+    async def image(self, ctx: commands.Context, prompt, size: typing.Literal["256x526", "512x512", "1024x1024"], model: typing.Literal["dall-e-2", "dall-e-3"] = "dall-e-2"):
         """Use openai diffusion models"""
         try:
             await ctx.defer()
@@ -24,14 +26,8 @@ class image(commands.Cog):
 
             result = str(prompt)
 
-            if model == "3":
+            if model == "dall-e-3":
                 size = "1024x1024"
-                model = "dall-e-3"
-            else:
-                model = "dall-e-2"
-
-            if size not in ["256x526", "512x512", "1024x1024"]:
-                size = "256x256"
 
             async with aiohttp.ClientSession() as session:
                 chatgpt = await functions.get_image_response(session, result, size, model)

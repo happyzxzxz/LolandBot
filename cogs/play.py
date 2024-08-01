@@ -1,3 +1,5 @@
+import typing
+
 from discord.ext import commands
 from discord import app_commands
 import wavelink
@@ -15,7 +17,7 @@ class play(commands.Cog):
 
     @commands.hybrid_command(name="play")
     @app_commands.describe(search="url (yandex/soundcloud/spotify/youtube/vk/any audiostream or file) or youtube search")
-    async def connect(self, ctx: commands.Context, *, search: str):
+    async def connect(self, ctx: commands.Context, *, search: str, queue_free: typing.Literal[1, 0] = 0):
         """Adds tracks or playlists into the queue"""
         await ctx.defer()
         if not ctx.voice_client:
@@ -48,15 +50,22 @@ class play(commands.Cog):
 
             if isinstance(tracks, wavelink.Playlist):
                 tracks.track_extras(ctx=ctx)
-                added: int = await vc.queue.put_wait(tracks)
-                await ctx.reply(f'Added {added} tracks from the {tracks.name} playlist into the queue.', view=view)
-                logger.info(f'Added {added} tracks from the {tracks.name} playlist into the queue. AUTHOR - {ctx.author}')
+                if queue_free:
+                    for track in tracks[::-1]:
+                        vc.queue.put_at(0, track)
+                else:
+                    await vc.queue.put_wait(tracks)
+                await ctx.reply(f'Added {len(tracks)} tracks from the {tracks.name} playlist into the queue.', view=view)
+                logger.info(f'Added {len(tracks)} tracks from the {tracks.name} playlist into the queue. AUTHOR - {ctx.author}')
 
             else:
                 track: wavelink.Playable = tracks[0]
                 track.ctx = ctx
 
-                await vc.queue.put_wait(track)
+                if queue_free:
+                    vc.queue.put_at(0, tracks[0])
+                else:
+                    await vc.queue.put_wait(track)
                 await ctx.reply(f'Added {track} into the queue.', view=view)
                 logger.info(f'Added {track} into the queue. AUTHOR - {ctx.author}')
         else:
@@ -69,9 +78,7 @@ class play(commands.Cog):
 
                 async def search_and_queue(vk_track):
 
-                    track_url = vk_track['url']
-                    track = await wavelink.Playable.search(track_url, source="http")
-                    track = functions.set_playable_vk(vk_track, track, ctx)
+                    track = functions.wavelink_create_playable(vk_track, ctx)
 
                     return track
 
@@ -87,20 +94,26 @@ class play(commands.Cog):
 
                     view = AddMoreView(ctx=ctx, search=search, vk_search_results=search_results, vk_playlist_title=playlist_title)
 
-                    for result_track in search_results:
-                        await vc.queue.put_wait(result_track)
+                    if queue_free:
+                        for search_result in search_results[::-1]:
+                            vc.queue.put_at(0, search_result)
+                    else:
+                        await vc.queue.put_wait(search_results)
+
                     await ctx.reply(
                         f'Added {vk_tracks["count"]} tracks from the {playlist_title} playlist into the queue.',
                         view=view)
                 else:
                     vk_track = vk_tracks[0]
-                    track_url = vk_track['url']
-                    track: wavelink.Search = await wavelink.Playable.search(track_url)
-                    track = functions.set_playable_vk(vk_track, track, ctx)
+
+                    track = functions.wavelink_create_playable(vk_track, ctx)
 
                     view = AddMoreView(ctx=ctx, search=search, vk_search_results=[track])
 
-                    await vc.queue.put_wait(track)
+                    if queue_free:
+                        vc.queue.put_at(0, track)
+                    else:
+                        await vc.queue.put_wait(track)
                     await ctx.reply(f"Added {vk_track['title']} into the queue.", view=view)
 
             await queue_tracks(vk_tracks, ctx, vc)

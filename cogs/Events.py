@@ -86,25 +86,20 @@ class Events(commands.Cog):
 
         if not payload.player.reading:
 
-            if "vkuseraudio.net" in payload.original.uri:
-                embed = discord.Embed(
-                    colour=discord.Colour.dark_blue(),
-                    title=payload.original.track_title,
-                    description=payload.original.track_author,
-                    url=payload.original.track_uri,
-                )
-                embed.set_thumbnail(url=payload.original.track_artwork)
+            embed = discord.Embed(
+                colour=discord.Colour.from_rgb(240, 200, 89),
+                title=payload.original.title,
+                description=payload.original.author,
+                url=payload.original.uri
+            )
+
+            if "vk.com" in payload.original.uri:
+                embed.colour = discord.Colour.dark_blue()
+                minutes, seconds = divmod(payload.original.length, 60)
+            else:
                 minutes, seconds = divmod(payload.original.length / 1000, 60)
 
-            else:
-                embed = discord.Embed(
-                    colour=discord.Colour.from_rgb(240, 200, 89),
-                    title=payload.original.title,
-                    description=payload.original.author,
-                    url=payload.original.uri
-                )
-                embed.set_thumbnail(url=payload.original.artwork)
-                minutes, seconds = divmod(payload.original.length / 1000, 60)
+            embed.set_thumbnail(url=payload.original.artwork)
 
             embed.set_author(name='Now playing')
             embed.add_field(name="Length", value=f"{int(minutes):02d}:{int(seconds):02d}")
