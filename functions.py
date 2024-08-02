@@ -1,5 +1,3 @@
-import lavalink
-
 import responses
 import openai
 from json import loads
