@@ -29,27 +29,29 @@ class gelbooru(commands.Cog):
             gelbooru = Gelbooru(settings.GELBOORU_API_SECRET, settings.GELBOORU_USER_ID)
             q = q.split()
 
-            result = await gelbooru.search_posts(tags=q, exclude_tags=['loli', 'guro', 'toddler', 'shota'])
+            results = []
+            for i in range(count):
+                result = await gelbooru.random_post(tags=q, exclude_tags=['loli', 'guro', 'toddler', 'shota'])
+                if result:
+                    if result.filename not in [i.filename for i in results]:
+                        results.append(result)
 
-            if result:
-                logger.info(f'Gelbooru response: {result}. AUTHOR - {ctx.author}')
-
-                embeds = []
-                for res in result[:count]:
+            if results:
+                for res in results:
 
                     temp_embed = discord.Embed()
-                    embeds.append(temp_embed.set_image(url=res))
+                    embed = temp_embed.set_image(url=res)
 
                     if '.mp4' in res.filename:
                         await ctx.reply(res)
                     else:
-                        await ctx.reply(' '.join(q), embeds=embeds)
+                        await ctx.reply(' '.join(q), embed=embed)
 
-                logger.info(f'Finished Gelbooru request. AUTHOR - {ctx.author}')
+                    logger.info(f'Finished Gelbooru request. AUTHOR - {ctx.author}')
             else:
-                await ctx.reply(
-                    "Censored", ephemeral=True)
+                await ctx.reply("Censored", ephemeral=True)
                 logger.info(f'Censored Gelbooru request. AUTHOR - {ctx.author}')
+
         else:
             await ctx.reply("This in not a NSFW channel", ephemeral=True)
 
@@ -61,13 +63,14 @@ class gelbooru(commands.Cog):
         current_tags = current.split()
         last_tag = current_tags[-1] if current_tags else ""
 
-        gelbooru_tags = await gelbooru.tag_list(name_pattern=f'%{last_tag}%', limit=4)
+        gelbooru_tags = await gelbooru.tag_list(name_pattern=f'%{last_tag}%', limit=10)
 
-        for tag_choice in gelbooru_tags:
-            if last_tag.lower() in tag_choice.name.lower():
+        if gelbooru_tags and last_tag:
+            for tag_choice in gelbooru_tags:
+                if last_tag.lower() in tag_choice.name.lower():
 
-                full_tag_string = ' '.join(current_tags[:-1] + [tag_choice.name])
-                data.append(app_commands.Choice(name=full_tag_string, value=full_tag_string))
+                    full_tag_string = ' '.join(current_tags[:-1] + [tag_choice.name])
+                    data.append(app_commands.Choice(name=full_tag_string, value=full_tag_string))
 
         return data
 
