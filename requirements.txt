@@ -5,6 +5,6 @@ openai
 emoji
 discord
 python-dotenv
-from youtube_search import YoutubeSearch
+youtube_search
 git+https://github.com/jericjan/saucenao_api#egg=saucenao_api
 git+https://github.com/happyzxzxz/vk_api_5.131.git#egg=vk_api
