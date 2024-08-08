@@ -3,6 +3,7 @@ from bot import logger
 import wavelink
 import json
 from discord import app_commands
+import discord
 
 
 class equalizer(commands.Cog):
@@ -47,7 +48,8 @@ class equalizer(commands.Cog):
         with open("jsons/equalizer_bands.json", "r") as file:
             equalizers = json.loads(file.read())
             for key in equalizers.keys():
-                name, guild_id = key.split('_')
+                key = key.split('_')
+                name, guild_id = '_'.join(key[:-1]), key[-1]
                 if guild_id.isdigit():
                     if interaction.guild_id == int(guild_id):
                         data.append(app_commands.Choice(name=name, value=name))

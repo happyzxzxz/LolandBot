@@ -9,6 +9,9 @@ from classes.Player import Player
 import settings
 import functions
 import asyncio
+from discord import app_commands
+from youtube_search import YoutubeSearch
+import discord
 
 
 class play(commands.Cog):
@@ -124,6 +127,19 @@ class play(commands.Cog):
 
         if view:
             await view.wait()
+
+    @connect.autocomplete('search')
+    async def search_autocomplete(self, interaction, current):
+        data = []
+
+        results = YoutubeSearch(current, max_results=10).to_dict()
+        for result in results:
+            name = result['title']
+            value = 'https://www.youtube.com' + result['url_suffix']
+
+            data.append(app_commands.Choice(name=name, value=value))
+
+        return data
 
 
 async def setup(bot):
