@@ -132,7 +132,8 @@ class play(commands.Cog):
     async def search_autocomplete(self, interaction, current):
         data = []
 
-        results = YoutubeSearch(current, max_results=10).to_dict()
+        results = await functions.run_blocking(YoutubeSearch, current, max_results=10)
+        results = results.to_dict()
         for result in results:
             name = result['title']
             value = 'https://www.youtube.com' + result['url_suffix']

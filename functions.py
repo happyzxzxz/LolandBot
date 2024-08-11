@@ -9,6 +9,8 @@ import struct
 from base64 import b64encode
 import wavelink
 from classes.DataWriter import DataWriter
+import functools
+from bot import bot
 
 
 async def get_chat_response(session, result, messages):
@@ -197,3 +199,8 @@ def wavelink_create_playable(vk_track, ctx):
 
     return track
 
+
+async def run_blocking(blocking_func, *args, **kwargs):
+    """Runs a blocking function in a non-blocking way"""
+    func = functools.partial(blocking_func, *args, **kwargs)
+    return await bot.loop.run_in_executor(None, func)
