@@ -1,6 +1,7 @@
 def handle_response(message) -> str:
-    """Custom message handling and responding"""
+    """Processes text and gives response"""
     p_message = message.lower()
 
-    if p_message == "hello bot":
+    if p_message == "hello loland":
         return "Online"
+    

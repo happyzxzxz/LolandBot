@@ -12,10 +12,10 @@ class filter(commands.Cog):
 
     @commands.hybrid_command(name="filter")
     @app_commands.describe(
-        reset="Reset settings", pitch="Default 1", speed="Default 1", rate="Default 1", rotation_hz="Default 0")
+        reset="Reset settings?", pitch="Pitch. Default 1", speed="Speed. Default 1", rate="Rate. Default 1", rotation_hz="Rotation (8D). Default 0")
     async def filter(self, ctx: commands.Context,
-                     reset: typing.Literal["On", "0ff"] = "Off",
-                     bassboosted: typing.Literal["On", "0ff"] = None,
+                     reset: typing.Literal["On", "Off"] = "Off",
+                     bassboosted: typing.Literal["On", "Off"] = None,
                      pitch: typing.Optional[typing.Literal["0.01", "0.25", "0.5", "0.75", "1", "1.25", "1.5", "1.75", "2", "3", "4", "5", "10", "20", "30", "40", "50"]] = None,
                      speed: typing.Optional[typing.Literal["0.1", "0.25", "0.5", "0.6", "0.7", "0.8", "0.9", "1", "1.5", "2", "3", "5", "10", "20", "50"]] = None,
                      rate: typing.Optional[typing.Literal["0.1", "0.25", "0.5", "0.6", "0.7", "0.8", "0.9", "1", "1.5", "2", "3", "5", "10", "20", "50"]] = None,
@@ -25,7 +25,7 @@ class filter(commands.Cog):
                      vibrato_frequency: typing.Optional[typing.Literal["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14"]] = None,
                      vibrato_depth: typing.Optional[typing.Literal["0", "0.01", "0.05", "0.1", "0.2", "0.3", "0.4", "0.5", "0.6", "0.7", "0.8", "0.9", "1"]] = None,
                      ):
-        """Set up filter for the current player"""
+        """Set filters for the current player"""
 
         await ctx.defer(ephemeral=True)
         bands = None
@@ -72,7 +72,7 @@ class filter(commands.Cog):
 
         await vc.set_filters(filters)
         logger.info(f"Set new filters for the player {vc.channel} at the guild {ctx.guild}")
-        await ctx.send("Filtered", ephemeral=True)
+        await ctx.send("All done, enjoy", ephemeral=True)
 
 
 async def setup(bot):

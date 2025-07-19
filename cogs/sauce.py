@@ -11,9 +11,9 @@ class sauce(commands.Cog):
         self.bot = bot
 
     @commands.hybrid_command(name="sauce")
-    @app_commands.describe(url="Image url")
+    @app_commands.describe(url="Image link (You can post it in discord and just copy that)")
     async def sauce(self, ctx: commands.Context, url):
-        """Find a source of an image/anime/manga/book"""
+        """Find source and author of the image/manga/anime/etc."""
         if ctx.channel.is_nsfw():
             await ctx.defer()
 
@@ -47,10 +47,10 @@ class sauce(commands.Cog):
                     logger.info(f'Finished Saucenao request. AUTHOR - {ctx.author}')
 
             except Exception as e:
-                await ctx.reply("Can't find or url is invalid")
+                await ctx.reply("Can't find or image is blocked somehow")
                 logger.info(f"Finished Saucenao request, can't find. AUTHOR - {ctx.author}")
         else:
-            await ctx.reply("This is not a NSFW channel", ephemeral=True)
+            await ctx.reply("This channel is not NSFW", ephemeral=True)
 
 
 async def setup(bot):

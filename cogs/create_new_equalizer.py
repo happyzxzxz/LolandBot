@@ -14,10 +14,11 @@ class create_new_equalizer(commands.Cog):
 
     @commands.hybrid_command(name="create_new_equalizer")
     @app_commands.describe(
-        name="Name of your equalizer preset", delete="Delete equalizer by the given name (1 for yes)")
+        name="Preset name", delete="Delete it?")
     async def create_new_equalizer(self, ctx, name, delete: typing.Literal[0, 1] = 0, hz25="0", hz40="0",
                                    hz63="0", hz100="0", hz160="0", hz250="0", hz400="0", hz630="0", hz1k="0",
                                    hz1_6k="0", hz2_5k="0", hz4k="0", hz6_3k="0", hz10k="0", hz16k="0"):
+        """Create new equalizer preset for this server"""
         await ctx.defer(ephemeral=True)
 
         if delete:
@@ -30,10 +31,10 @@ class create_new_equalizer(commands.Cog):
                 with open("jsons/equalizer_bands.json", "w") as file:
                     file.write(json.dumps(equalizers, indent=3))
 
-                await ctx.send(f"Deleted {name} equalizer", ephemeral=True)
+                await ctx.send(f"Deleted equalizer {name}", ephemeral=True)
 
             else:
-                await ctx.send("There are no such equalizer")
+                await ctx.send("There is no such preset or it's standart")
                 return
         else:
 
@@ -64,13 +65,13 @@ class create_new_equalizer(commands.Cog):
                     {"band": 14, "gain": float(hz16k)}
                 ]})
             else:
-                await ctx.send("This equalizer name has already been taken")
+                await ctx.send("Equalizer with this name already exists")
                 return
 
             with open("jsons/equalizer_bands.json", "w") as file:
                 file.write(json.dumps(equalizers, indent=3))
 
-            await ctx.send(f"Added {name} equalizer", ephemeral=True)
+            await ctx.send(f"Added equalizer {name}", ephemeral=True)
 
     # Yea I know, but it seems like the only way to make choises with ability to enter custom values
 

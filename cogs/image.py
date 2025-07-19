@@ -6,6 +6,7 @@ from bot import logger
 import aiohttp
 import functions
 import discord
+from settings import openai_censored_image_url
 
 
 class image(commands.Cog):
@@ -14,12 +15,12 @@ class image(commands.Cog):
 
     @commands.hybrid_command(name="image")
     @app_commands.describe(
-        prompt="Your prompt",
-        size="Image size (default is 256x256, for dall-e-3 only 1024x1024)",
-        model="Choose model. Default dall-e-2"
+        prompt="Prompt (request)",
+        size="Size (Default 256x256, for dall-e-3 only 1024x1024)",
+        model="Model. Default dall-e-2"
     )
     async def image(self, ctx: commands.Context, prompt, size: typing.Literal["256x526", "512x512", "1024x1024"], model: typing.Literal["dall-e-2", "dall-e-3"] = "dall-e-2"):
-        """Use openai diffusion models"""
+        """Send request to the image generator"""
         try:
             await ctx.defer()
             logger.info(f'Starting openai DALL-E-2/3 request.... AUTHOR - {ctx.author}')
@@ -44,9 +45,9 @@ class image(commands.Cog):
         except KeyError:
             embed = discord.Embed()
             embed.set_image(
-                url="https://static.wikia.nocookie.net/lobotomycorp/images/c/cb/CENSOREDPortrait.png/revision/latest?cb=20171119115551")
+                url=openai_censored_image_url)
 
-            await ctx.reply("Do not try this.", embed=embed)
+            await ctx.reply("Nuh uh.", embed=embed)
             logger.info(f'Censored Openai DALL-E-2/3 request. AUTHOR - {ctx.author}. Response: {chatgpt}')
 
 

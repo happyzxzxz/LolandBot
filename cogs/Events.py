@@ -78,6 +78,7 @@ class Events(commands.Cog):
                                     f"{member.name} reacted on the message {message.content} and earned role {role}")
 
         except FileNotFoundError:
+            logger.warning("Something is wrong with reaction_messages json, check it")
             return
 
     @commands.Cog.listener()
@@ -95,14 +96,15 @@ class Events(commands.Cog):
 
             if "vk.com" in payload.original.uri:
                 embed.colour = discord.Colour.dark_blue()
-                minutes, seconds = divmod(payload.original.length, 60)
-            else:
-                minutes, seconds = divmod(payload.original.length / 1000, 60)
+            if "spotify.com" in payload.original.uri:
+                embed.colour = discord.Colour.from_rgb(33, 219, 111)
+                
+            minutes, seconds = divmod(payload.original.length / 1000, 60)
 
             embed.set_thumbnail(url=payload.original.artwork)
 
             embed.set_author(name='Now playing')
-            embed.add_field(name="Length", value=f"{int(minutes):02d}:{int(seconds):02d}")
+            embed.add_field(name="Duration", value=f"{int(minutes):02d}:{int(seconds):02d}")
 
             if payload.player.queue.mode == wavelink.QueueMode.normal:
                 view = NaviPanelView(ctx=payload.original.ctx, embed=embed, loop=False)

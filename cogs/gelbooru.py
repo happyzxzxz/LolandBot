@@ -1,9 +1,10 @@
 from discord.ext import commands
 from discord import app_commands
 from bot import logger
-from pygelbooru import Gelbooru
+from python_gelbooru import AsyncGelbooru
 import settings
 import discord
+from contextlib import suppress
 
 
 class gelbooru(commands.Cog):
@@ -11,66 +12,65 @@ class gelbooru(commands.Cog):
         self.bot = bot
 
     @commands.hybrid_command(name="gelbooru")
-    @app_commands.describe(q="Search", count="Count of posts (max 4)")
+    @app_commands.describe(q="Tags", count="Number of posts (max 4)")
     async def gelbooru(self, ctx: commands.Context, q, count=1):
-        """Gelbooru.com searching with tags"""
+        """Search on Gelbooru.com with tags"""
         if ctx.channel.is_nsfw():
 
             if type(count) == int and count <= 4:
                 pass
             else:
-                await ctx.reply('Max count is 4', ephemeral=True)
+                await ctx.reply('Max 4', ephemeral=True)
                 return
 
             await ctx.defer()
 
             logger.info(f'Starting Gelbooru request.... AUTHOR - {ctx.author}')
 
-            gelbooru = Gelbooru(settings.GELBOORU_API_SECRET, settings.GELBOORU_USER_ID)
+            gelbooru = AsyncGelbooru(api_key=settings.GELBOORU_API_SECRET, user_id=settings.GELBOORU_USER_ID)
             q = q.split()
 
-            results = []
             for i in range(count):
-                result = await gelbooru.random_post(tags=q, exclude_tags=['loli', 'guro', 'toddler', 'shota'])
-                if result:
-                    if result.filename not in [i.filename for i in results]:
-                        results.append(result)
+                result = await gelbooru.search_posts(tags=q, exclude_tags=settings.excluded_gelbooru_tags,
+                                                     limit=count, random=True)
 
-            if results:
-                for res in results:
+            if result:
+                for res in result:
 
                     temp_embed = discord.Embed()
-                    embed = temp_embed.set_image(url=res)
+                    embed = temp_embed.set_image(url=res.file_url)
 
-                    if '.mp4' in res.filename:
-                        await ctx.reply(res)
+                    if '.mp4' in res.file_name:
+                        await ctx.reply(res.file_url)
                     else:
                         await ctx.reply(' '.join(q), embed=embed)
 
                     logger.info(f'Finished Gelbooru request. AUTHOR - {ctx.author}')
             else:
-                await ctx.reply("Censored", ephemeral=True)
+                await ctx.reply("Censored or not found", ephemeral=True)
                 logger.info(f'Censored Gelbooru request. AUTHOR - {ctx.author}')
 
         else:
-            await ctx.reply("This in not a NSFW channel", ephemeral=True)
+            await ctx.reply("This channel is not NSFW", ephemeral=True)
 
     @gelbooru.autocomplete("q")
     async def tags_autocompletion(self, interaction, current):
-        gelbooru = Gelbooru(settings.GELBOORU_API_SECRET, settings.GELBOORU_USER_ID)
+        # Keep in mind that if bot doesn't respond in 3 sec then interaction will delete itself, there is no way to fix it
+        gelbooru = AsyncGelbooru(api_key=settings.GELBOORU_API_SECRET, user_id=settings.GELBOORU_USER_ID)
         data = []
 
         current_tags = current.split()
         last_tag = current_tags[-1] if current_tags else ""
 
-        gelbooru_tags = await gelbooru.tag_list(name_pattern=f'%{last_tag}%', limit=10)
+        with suppress(KeyError):
+            gelbooru_tags = await gelbooru.search_tags(name_pattern=f'%{last_tag}%', limit=10)
 
-        if gelbooru_tags and last_tag:
-            for tag_choice in gelbooru_tags:
-                if last_tag.lower() in tag_choice.name.lower():
+            if gelbooru_tags and last_tag:
+                for tag_choice in gelbooru_tags:
+                    if last_tag.lower() in tag_choice.name.lower():
 
-                    full_tag_string = ' '.join(current_tags[:-1] + [tag_choice.name])
-                    data.append(app_commands.Choice(name=full_tag_string, value=full_tag_string))
+                        full_tag_string = ' '.join(current_tags[:-1] + [tag_choice.name])
+                        data.append(app_commands.Choice(name=full_tag_string, value=full_tag_string))
 
         return data
 

@@ -15,8 +15,8 @@ class reaction_role(commands.Cog):
     @commands.hybrid_command(name="reaction_role")
     @app_commands.describe(
         message_id="Message ID",
-        role="Name of the role that bot will give (without @)", emoj="Emoji (like this :nerd:)",
-        deleted="1 to delete, 0 to add (default 0)")
+        role="Role name (without @)", emoj="Emoji (Please pick with discord or type like :nerd:)",
+        deleted="1 To delete, 0 to add (Default 0)")
     @commands.has_permissions(administrator=True)
     async def create_new_reaction_role(self, ctx, message_id, role, emoj, deleted: typing.Literal[0, 1] = 0):
         """Add or delete reaction role"""
@@ -25,7 +25,7 @@ class reaction_role(commands.Cog):
             await ctx.defer(ephemeral=True)
 
             if not (message_id.isdigit()):
-                await ctx.send("Message ID should be digits only", ephemeral=True)
+                await ctx.send("Invalid ID, must be digits only", ephemeral=True)
                 return
 
             try:
@@ -65,7 +65,7 @@ class reaction_role(commands.Cog):
             msg = await ctx.fetch_message(int(message_id))
 
             if deleted == 1:
-                await ctx.send(f"Deleted reaction-role with role {role} and emoji {emoj}, message: '{msg.content}'",
+                await ctx.send(f"Deleted reaction role {role} with emoji {emoj}, message: '{msg.content}'",
                                ephemeral=True)
 
                 guild = msg.guild
@@ -75,14 +75,14 @@ class reaction_role(commands.Cog):
 
                 logger.info(f"Deleted reaction-role on the message: '{msg.content}' at the {msg.guild} and role {role}")
             else:
-                await ctx.send(f"Added reaction-role with role {role} and emoji {emoj}, message: '{msg.content}'",
+                await ctx.send(f"Added new reaction role {role} with emoji {emoj}, message: '{msg.content}'",
                                ephemeral=True)
                 await msg.add_reaction(emoj)
                 logger.info(
                     f"Added new reaction-role on the message: '{msg.content}' at the {msg.guild} and role {role}")
 
         except Exception as e:
-            await ctx.send("Please use this command in the channel with your message", ephemeral=True)
+            await ctx.send("Use this command in the same channel that contains needed message", ephemeral=True)
             logger.error(e)
 
 

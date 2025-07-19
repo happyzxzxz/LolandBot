@@ -10,7 +10,7 @@ import asyncio
 logger = settings.logging.getLogger("discord")
 openai.api_key = settings.OPENAI_API_SECRET
 
-
+# Discord intents. Change if needed
 intents = discord.Intents.default()
 intents.typing = False
 intents.presences = False

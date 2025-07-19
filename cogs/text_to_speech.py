@@ -12,10 +12,10 @@ class text_to_speech(commands.Cog):
         self.bot = bot
 
         self.ctx_menu = app_commands.ContextMenu(
-            name='Read out loud',
-            callback=self.text_to_speech,  # set the callback of the context menu to "my_cool_context_menu"
+            name='Read aloud',
+            callback=self.text_to_speech,
         )
-        self.bot.tree.add_command(self.ctx_menu)  # add the context menu to the tree
+        self.bot.tree.add_command(self.ctx_menu)
 
     async def text_to_speech(self, interaction: discord.Interaction, message: discord.Message):
 
@@ -25,7 +25,7 @@ class text_to_speech(commands.Cog):
             if interaction.user.voice:
                 vc: wavelink.Player = await interaction.user.voice.channel.connect(cls=Player)
             else:
-                await interaction.followup.send('Connect to the voice channel', ephemeral=True)
+                await interaction.followup.send('Enter the voice channel', ephemeral=True)
                 return
         else:
             vc: wavelink.Player = interaction.guild.voice_client
@@ -37,7 +37,7 @@ class text_to_speech(commands.Cog):
             message_content_list = [message_content[x:x+850] for x in range(0, len(message_content), 850)]
 
             for part in message_content_list:
-                async with session.get('https://api.flowery.pw/v1/tts', params={"voice": "Kevin",
+                async with session.get('https://api.flowery.pw/v1/tts', params={"voice": "Maxim",
                                                                                     "text": part}) as response:
                     data = str(response.url)
                     tracks = await wavelink.Pool.fetch_tracks(data)
@@ -47,7 +47,7 @@ class text_to_speech(commands.Cog):
 
             logger.info('Successfully ended flowerytts api request')
 
-            await interaction.followup.send('Reading out loud...', ephemeral=True)
+            await interaction.followup.send('Reading...', ephemeral=True)
 
         if not vc.current:
             await vc.play(vc.queue.get())

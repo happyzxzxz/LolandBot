@@ -32,7 +32,7 @@ class NaviPanelView(discord.ui.View):
         await interaction.response.defer()
 
         if not self.ctx.author.voice:
-            await self.ctx.send('Connect to the voice channel', ephemeral=True)
+            await self.ctx.send('Enter the voice channel', ephemeral=True)
             await interaction.message.edit(embed=self.embed, view=NaviPanelView(ctx=self.ctx, embed=self.embed, loop=self.check_loop()))
             return
         else:
@@ -49,7 +49,7 @@ class NaviPanelView(discord.ui.View):
         await interaction.response.defer()
 
         if not self.ctx.author.voice:
-            await self.ctx.send('Connect to the voice channel', ephemeral=True)
+            await self.ctx.send('Enter the voice channel', ephemeral=True)
             await interaction.message.edit(embed=self.embed, view=NaviPanelView(ctx=self.ctx, embed=self.embed, loop=self.check_loop()))
             return
         else:
@@ -67,7 +67,7 @@ class NaviPanelView(discord.ui.View):
         await interaction.response.defer()
 
         if not self.ctx.author.voice:
-            await self.ctx.send('Connect to the voice channel', ephemeral=True)
+            await self.ctx.send('Enter the voice channel', ephemeral=True)
             await interaction.message.edit(embed=self.embed, view=NaviPanelView(ctx=self.ctx, embed=self.embed, loop=self.check_loop()))
             return
         else:
@@ -82,7 +82,7 @@ class NaviPanelView(discord.ui.View):
         await interaction.response.defer()
 
         if not self.ctx.author.voice:
-            await self.ctx.send('Connect to the voice channel', ephemeral=True)
+            await self.ctx.send('Enter the voice channel', ephemeral=True)
             await interaction.message.edit(embed=self.embed, view=NaviPanelView(ctx=self.ctx, embed=self.embed, loop=self.check_loop()))
             return
         else:
@@ -103,7 +103,7 @@ class NaviPanelView(discord.ui.View):
         await interaction.response.defer()
 
         if not self.ctx.author.voice:
-            await self.ctx.send('Connect to the voice channel', ephemeral=True)
+            await self.ctx.send('Enter the voice channel', ephemeral=True)
             await interaction.message.edit(embed=self.embed, view=NaviPanelView(ctx=self.ctx, embed=self.embed, loop=self.check_loop()))
             return
         else:
@@ -131,7 +131,7 @@ class NaviPanelView(discord.ui.View):
         await interaction.response.defer()
 
         if not self.ctx.author.voice:
-            await self.ctx.send('Connect to the voice channel', ephemeral=True)
+            await self.ctx.send('Enter the voice channel', ephemeral=True)
             await interaction.message.edit(embed=self.embed, view=NaviPanelView(ctx=self.ctx, embed=self.embed, loop=self.check_loop()))
             return
         else:

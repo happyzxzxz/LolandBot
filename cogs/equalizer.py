@@ -3,7 +3,6 @@ from bot import logger
 import wavelink
 import json
 from discord import app_commands
-import discord
 
 
 class equalizer(commands.Cog):
@@ -13,6 +12,7 @@ class equalizer(commands.Cog):
     @commands.hybrid_command(name="equalizer")
     @app_commands.describe(name="Name of your equalizer preset")
     async def equalizer(self, ctx, name):
+        """Select equalizer preset for the current player"""
 
         await ctx.defer(ephemeral=True)
 

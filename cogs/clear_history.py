@@ -9,13 +9,13 @@ class clear_history(commands.Cog):
 
     @commands.hybrid_command(name="clear_history")
     async def clear_history(self, ctx: commands.Context):
-        """Deletes your chatgpt history"""
+        """Deletes all your LLM history"""
         if ('chatgptlog' + str(ctx.author.id) + '.json') in os.listdir('chatgptlogs'):
             os.remove('chatgptlogs/chatgptlog' + str(ctx.author.id) + '.json')
             await ctx.reply('Deleted')
             logger.info(f'{ctx.author} successfully deleted his openai chatgpt history')
         else:
-            await ctx.reply('There are no history')
+            await ctx.reply('No history')
 
 
 async def setup(bot):

@@ -9,9 +9,9 @@ class skip(commands.Cog):
         self.bot = bot
 
     @commands.hybrid_command(name="skip")
-    @app_commands.describe(count="How many to skip")
+    @app_commands.describe(count="How many to skip? Default 1")
     async def skip(self, ctx, count=1):
-        """Skip tracks in the queue"""
+        """Skip tracks"""
 
         await ctx.defer(ephemeral=True)
 
@@ -28,7 +28,7 @@ class skip(commands.Cog):
                     await ctx.reply('Skipped', delete_after=1, ephemeral=True)
                     logger.info(f'Skipped {count} tracks')
             else:
-                await ctx.reply('Connect to the voice channel', delete_after=1, ephemeral=True)
+                await ctx.reply('Enter the voice channel', delete_after=1, ephemeral=True)
         else:
             await ctx.reply('I am not in the voice channel', delete_after=1, ephemeral=True)
 

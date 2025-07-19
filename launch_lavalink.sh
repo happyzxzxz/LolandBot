@@ -44,14 +44,13 @@ YOUTUBE_PLUGIN_FILE="$LAVALINK_PLUGINS_DIR/youtube-plugin-${ACTUAL_YOUTUBE_VERSI
 # Create required directories
 mkdir -p "$LAVALINK_DIR"
 mkdir -p "$LAVALINK_PLUGINS_DIR"
-mkdir -p "$BASE_DIR/logs"
 mkdir -p "$LAVALINK_DIR/logs"
 
 # Download function
 download_file() {
     local url="$1"
     local file="$2"
-    
+
     if [ ! -f "$file" ]; then
         echo "Downloading $(basename "$file")..."
         if ! wget -O "$file" "$url"; then
@@ -68,36 +67,10 @@ download_file "$LAVALINK_URL" "$LAVALINK_FILE"
 download_file "$LAVASRC_PLUGIN_URL" "$LAVASRC_PLUGIN_FILE"
 download_file "$YOUTUBE_PLUGIN_URL" "$YOUTUBE_PLUGIN_FILE"
 
-# Virtual environment setup
-VENV_DIR="$BASE_DIR/venv"
-ACTIVATE_SCRIPT="$VENV_DIR/bin/activate"
-
-if [ ! -f "$ACTIVATE_SCRIPT" ]; then
-    echo "Setting up virtual environment..."
-    python3 -m venv "$VENV_DIR"
-    source "$ACTIVATE_SCRIPT"
-    pip install -r "$BASE_DIR/requirements.txt"
-else
-    echo "Virtual environment already exists. Skipping setup."
-    source "$ACTIVATE_SCRIPT"
-fi
-
-echo "Setup complete!"
-
-# Start Python bot
-echo "Starting Python bot..."
-nohup python3 "$BASE_DIR/main.py" > "$BASE_DIR/logs/BotLog.log" 2>&1 &
-
-# Short pause to ensure bot starts
-sleep 2
-
 # Start Lavalink server
 echo "Starting Lavalink server..."
 cd "$LAVALINK_DIR" || exit
 nohup java -jar "$LAVALINK_FILE" > "$LAVALINK_DIR/logs/spring.log" 2>&1 &
-
-echo "All processes started!"
-echo "Check the log files in $BASE_DIR/logs/ for output."
 
 # Final pause to ensure script doesn't close too early
 sleep 5

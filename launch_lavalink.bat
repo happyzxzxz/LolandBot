@@ -10,7 +10,6 @@ if "%BASE_DIR:~-1%"=="\" set "BASE_DIR=%BASE_DIR:~0,-1%"
 :: Set destination folders
 set "LAVALINK_DIR=%BASE_DIR%\Lavalink"
 set "LAVALINK_PLUGINS_DIR=%LAVALINK_DIR%\plugins"
-set "LOGS_DIR=%BASE_DIR%\logs"
 set "LAVALINK_LOGS_DIR=%LAVALINK_DIR%\logs"
 
 :: Define versions for Lavalink and plugins. Use "latest" for the latest version
@@ -93,7 +92,6 @@ set "YOUTUBE_PLUGIN_FILE=%LAVALINK_PLUGINS_DIR%\youtube-plugin-%ACTUAL_YOUTUBE_V
 :: Create directories if they don't exist
 if not exist "%LAVALINK_DIR%" mkdir "%LAVALINK_DIR%"
 if not exist "%LAVALINK_PLUGINS_DIR%" mkdir "%LAVALINK_PLUGINS_DIR%"
-if not exist "%LOGS_DIR%" mkdir "%LOGS_DIR%"
 if not exist "%LAVALINK_LOGS_DIR%" mkdir "%LAVALINK_LOGS_DIR%"
 
 :: Download Lavalink and plugins
@@ -101,32 +99,12 @@ call :DownloadFile "%LAVALINK_URL%" "%LAVALINK_FILE%"
 call :DownloadFile "%LAVASRC_PLUGIN_URL%" "%LAVASRC_PLUGIN_FILE%"
 call :DownloadFile "%YOUTUBE_PLUGIN_URL%" "%YOUTUBE_PLUGIN_FILE%"
 
-:: Check if virtual environment exists
-if not exist "%BASE_DIR%\venv\Scripts\activate.bat" (
-    echo Setting up the virtual environment...
-    python -m venv "%BASE_DIR%\venv"
-    call "%BASE_DIR%\venv\Scripts\activate.bat"
-    pip install -r "%BASE_DIR%\requirements.txt"
-) else (
-    echo Virtual environment already exists. Skipping setup.
-    call "%BASE_DIR%\venv\Scripts\activate.bat"
-)
-
-echo Setup complete!
-
-:: Start the Python bot in a new command prompt window with logging
-echo Starting Python bot...
-start "" cmd /c "cd /d %BASE_DIR% && python main.py > logs\BotLog.log 2>&1"
-
-:: Wait for 2 seconds to ensure the bot starts
-timeout /t 2 /nobreak >nul
-
 :: Start Lavalink server in a new command prompt window with logging
 echo Starting Lavalink server...
 start "" cmd /c "cd /d %LAVALINK_DIR% && java -jar Lavalink.jar > logs\spring.log 2>&1"
 
-echo All processes started!
-echo Check the log files in %LOGS_DIR% for output.
+echo Lavalink server started!
+echo Check the log files in %LAVALINK_LOGS_DIR% for output.
 
 :: Final pause to ensure script doesn't close too early
 timeout /t 5 /nobreak >nul

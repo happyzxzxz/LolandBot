@@ -11,6 +11,6 @@ class Player(wavelink.Player):
         # Call the original _destroy method from wavelink.Player
         await super()._destroy()
 
-        # Execute your custom code after the original _destroy
+        # Destroy player message as well
         if hasattr(self, 'player_message') and self.player_message:
             await self.player_message.delete()

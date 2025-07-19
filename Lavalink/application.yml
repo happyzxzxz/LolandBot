@@ -86,16 +86,22 @@ plugins:
       deezer: false
       flowerytts: false
       spotify: true
+      vkmusic: true
       yandexmusic: true
       youtube: false
     spotify:
       albumLoadLimit: 6
-      clientId: myid
-      clientSecret: mysecret
+      clientId: your clientID
+      clientSecret: your clientSecret
       countryCode: US
       playlistLoadLimit: 6
+    vkmusic:
+      artistLoadLimit: 100
+      playlistLoadLimit: 100
+      recommendationsLoadLimit: 100
+      userToken: your userToken
     yandexmusic:
-      accessToken: mytoken
+      accessToken: your accessToken
   youtube:
     ANDROID:
       playback: false
@@ -118,6 +124,12 @@ plugins:
     - MEDIA_CONNECT
     - IOS
     enabled: true
+    # pot:
+      # token: ""
+      # visitorData: ""
+    oauth:
+      enabled: true
+      refreshToken: your refreshToken
 sentry:
   dsn: ''
   environment: ''

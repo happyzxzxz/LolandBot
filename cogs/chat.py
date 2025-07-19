@@ -1,5 +1,6 @@
 from discord.ext import commands
 from discord import app_commands
+import typing
 import os
 import json
 from bot import logger
@@ -14,10 +15,14 @@ class chat(commands.Cog):
         self.bot = bot
 
     @commands.hybrid_command(name="chat")
-    @app_commands.describe(prompt="Your prompt")
-    async def chat(self, ctx: commands.Context, prompt):
-        """Ask anything from chatgpt (Everyone can see)"""
-        await ctx.defer()
+    @app_commands.describe(prompt="Question LLM", ephemeral="Personal question?")
+    async def chat(self, ctx: commands.Context, prompt, ephemeral: typing.Literal["On", "Off"] = "Off"):
+        """Ask LLM something"""
+
+        ephemeral = True if ephemeral == "On" else False
+        
+        await ctx.defer(ephemeral=ephemeral)
+
         logger.info(f'Starting openai chatgpt request.... AUTHOR - {ctx.author}')
 
         result = str(prompt)
@@ -52,7 +57,7 @@ class chat(commands.Cog):
         with open('chatgptlogs/' + author_log, 'w', encoding='UTF-8') as messages_file:
             json.dump(messages, messages_file, ensure_ascii=False)
 
-        await ctx.reply(embed=discord.Embed(title=f'{result[:255]}', description=reply))
+        await ctx.reply(embed=discord.Embed(title=f'{result[:255]}', description=reply), ephemeral=ephemeral)
         logger.info(f'Finished Openai chatgpt request. AUTHOR - {ctx.author}')
 
 
