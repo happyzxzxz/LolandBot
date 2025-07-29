@@ -21,64 +21,87 @@ set "YOUTUBE_PLUGIN_VERSION=latest"
 :: Jump to main script to avoid executing functions prematurely
 goto :main
 
-:: Function to get actual version from GitHub release URL
+:: Function to get actual version from GitHub API
 :GetActualVersion
-setlocal
-set "URL=%~1"
-:: Extract the basename of the URL
-for %%a in ("%URL%") do set "BASENAME=%%~nxa"
-if /i "!BASENAME!"=="latest" (
-    set "TEMP_FILE=%TEMP%\github_redirect_%RANDOM%.txt"
-    curl -s -I -L --max-redirs 10 "%URL%" > "!TEMP_FILE!"
-    for /f "tokens=2" %%a in ('findstr /i "location:" "!TEMP_FILE!"') do set "FINAL_URL=%%a"
-    for %%a in (!FINAL_URL!) do set "VERSION=%%~nxa"
-    del "!TEMP_FILE!"
-) else (
-    set "VERSION=!BASENAME!"
-)
-endlocal & set "ACTUAL_VERSION=%VERSION%"
-exit /b
 
-:: Function to download a file if it doesn't exist using curl
+set "REPO=%~1"
+
+set "URL=https://api.github.com/repos/%REPO%/releases/latest"
+
+set "TEMP_FILE=%TEMP%\github_release_%RANDOM%.json"
+
+:: GitHub API
+curl -s -L "%URL%" -o "%TEMP_FILE%"
+if errorlevel 1 (
+    echo Failed to fetch latest version for %REPO%
+    if exist "%TEMP_FILE%" del "%TEMP_FILE%"
+    endlocal & set "ACTUAL_VERSION="
+    exit /b 1
+)
+
+:: PowerShell
+for /f "usebackq delims=" %%a in (`powershell -NoProfile -Command "try { $json = Get-Content '%TEMP_FILE%' -Raw -ErrorAction Stop | ConvertFrom-Json; if ($json.tag_name) { $json.tag_name } else { exit 1 } } catch { exit 1 }"`) do (
+    set "VERSION=%%a"
+)
+
+if exist "%TEMP_FILE%" del "%TEMP_FILE%"
+
+exit /b 0
+
+:: Function to download a file using curl
 :DownloadFile
 setlocal
 set "URL=%~1"
 set "FILE=%~2"
-if not exist "%FILE%" (
-    echo Downloading %~nx2...
-    curl -L -o "%FILE%" "%URL%"
-    if errorlevel 1 (
-        echo Failed to download %~nx2
-        exit /b 1
-    )
-) else (
+
+if exist "%FILE%" (
     echo %~nx2 already exists. Skipping download.
+    endlocal
+    exit /b 0
 )
+
+echo Downloading %~nx2...
+curl -L -o "%FILE%" "%URL%"
+if errorlevel 1 (
+    echo Failed to download %~nx2
+    del "%FILE%" 2>nul
+    endlocal
+    exit /b 1
+)
+:: Verify if the file is a valid JAR (basic check for ZIP header)
+for /f "tokens=1-2" %%a in ('powershell -Command "(Get-Content -Path '%FILE%' -Encoding Byte -TotalCount 2 | ForEach-Object { '{0:X2}' -f $_ })"') do (
+    set "HEADER=%%a%%b"
+)
+
+echo Successfully downloaded %~nx2
 endlocal
 exit /b
 
 :main
+setlocal EnableDelayedExpansion
+
 :: Get actual versions for "latest"
 if "%LAVALINK_VERSION%"=="latest" (
-    call :GetActualVersion "https://github.com/lavalink-devs/Lavalink/releases/latest"
-    set "ACTUAL_LAVALINK_VERSION=%ACTUAL_VERSION%"
+    call :GetActualVersion "lavalink-devs/Lavalink"
+    set "ACTUAL_LAVALINK_VERSION=!VERSION!"
 ) else (
     set "ACTUAL_LAVALINK_VERSION=%LAVALINK_VERSION%"
 )
 
 if "%LAVASRC_PLUGIN_VERSION%"=="latest" (
-    call :GetActualVersion "https://github.com/topi314/LavaSrc/releases/latest"
-    set "ACTUAL_LAVASRC_VERSION=%ACTUAL_VERSION%"
+    call :GetActualVersion "topi314/LavaSrc"
+    set "ACTUAL_LAVASRC_VERSION=!VERSION!"
 ) else (
     set "ACTUAL_LAVASRC_VERSION=%LAVASRC_PLUGIN_VERSION%"
 )
 
 if "%YOUTUBE_PLUGIN_VERSION%"=="latest" (
-    call :GetActualVersion "https://github.com/lavalink-devs/youtube-source/releases/latest"
-    set "ACTUAL_YOUTUBE_VERSION=%ACTUAL_VERSION%"
+    call :GetActualVersion "lavalink-devs/youtube-source"
+    set "ACTUAL_YOUTUBE_VERSION=!VERSION!"
 ) else (
     set "ACTUAL_YOUTUBE_VERSION=%YOUTUBE_PLUGIN_VERSION%"
 )
+
 
 :: Set URLs for the Java files
 set "LAVALINK_URL=https://github.com/lavalink-devs/Lavalink/releases/download/%ACTUAL_LAVALINK_VERSION%/Lavalink.jar"
@@ -98,8 +121,11 @@ if not exist "%LAVALINK_LOGS_DIR%" mkdir "%LAVALINK_LOGS_DIR%"
 
 :: Download Lavalink and plugins
 call :DownloadFile "%LAVALINK_URL%" "%LAVALINK_FILE%"
+if errorlevel 1 exit /b 1
 call :DownloadFile "%LAVASRC_PLUGIN_URL%" "%LAVASRC_PLUGIN_FILE%"
+if errorlevel 1 exit /b 1
 call :DownloadFile "%YOUTUBE_PLUGIN_URL%" "%YOUTUBE_PLUGIN_FILE%"
+if errorlevel 1 exit /b 1
 
 :: Check if virtual environment exists
 if not exist "%BASE_DIR%\venv\Scripts\activate.bat" (
@@ -116,14 +142,14 @@ echo Setup complete!
 
 :: Start the Python bot in a new command prompt window with logging
 echo Starting Python bot...
-start "" cmd /c "cd /d %BASE_DIR% && python main.py > logs\BotLog.log 2>&1"
+start "" cmd /c "cd /d %BASE_DIR% && python main.py"
 
 :: Wait for 2 seconds to ensure the bot starts
 timeout /t 2 /nobreak >nul
 
 :: Start Lavalink server in a new command prompt window with logging
 echo Starting Lavalink server...
-start "" cmd /c "cd /d %LAVALINK_DIR% && java -jar Lavalink.jar > logs\spring.log 2>&1"
+start "" cmd /c "cd /d %LAVALINK_DIR% && java -jar Lavalink.jar"
 
 echo All processes started!
 echo Check the log files in %LOGS_DIR% for output.
@@ -131,4 +157,4 @@ echo Check the log files in %LOGS_DIR% for output.
 :: Final pause to ensure script doesn't close too early
 timeout /t 5 /nobreak >nul
 
-endlocal
+endlocal    
